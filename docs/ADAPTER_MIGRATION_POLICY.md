@@ -33,3 +33,21 @@ Record date: `2026-02-17`
 3. Pull requests that change contract behavior must update both:
    - compatibility fixtures
    - this migration policy document
+
+## Security Gating Invariants
+
+These adapter-level controls are treated as contract behavior and must not silently weaken in `1.x` versions:
+
+1. Model Context Protocol import stays deny-by-default.
+2. Model Context Protocol import requires all of the following:
+   - pinned `server_version`
+   - non-empty `trust_profile_id`
+   - host allow list metadata for network-enabled tools
+3. Model Context Protocol import rejects local startup command fields.
+4. Release compatibility gate blocks advisory-only Model Context Protocol outcomes.
+
+If any item above changes, it requires:
+
+1. explicit migration note here
+2. test fixture updates in `tests/`
+3. major version bump when behavior weakens or field semantics change
