@@ -409,6 +409,12 @@ def _run_stage_one_combination(
     release_output = run_dir / "release"
     verify_result: CommandResult
     release_result: CommandResult
+    pack_verify_result = CommandResult(
+        command=["<not-run>"],
+        return_code=1,
+        stdout="",
+        stderr="compliance pack verification not run",
+    )
     approval_id = f"stage1-{environment_name}-{risk}"
     if attempt_label != "primary":
         approval_id = f"{approval_id}-{attempt_label}"
@@ -448,6 +454,34 @@ def _run_stage_one_combination(
         verify_result = run_command(verify_command, cwd=project_root, env=env)
         if verify_result.return_code == 0:
             release_result = run_command(release_command, cwd=project_root, env=env)
+            if release_result.return_code == 0:
+                pack_verify_command = [
+                    sys.executable,
+                    "-m",
+                    "lifeguard",
+                    "compliance-pack-verify",
+                    "--pack",
+                    str(release_output / "compliance_pack"),
+                    "--signing-key-file",
+                    str(signing_key_path),
+                ]
+                pack_verify_result = run_command(pack_verify_command, cwd=project_root, env=env)
+            else:
+                pack_verify_result = CommandResult(
+                    command=[
+                        sys.executable,
+                        "-m",
+                        "lifeguard",
+                        "compliance-pack-verify",
+                        "--pack",
+                        str(release_output / "compliance_pack"),
+                        "--signing-key-file",
+                        str(signing_key_path),
+                    ],
+                    return_code=1,
+                    stdout="",
+                    stderr="compliance pack verification skipped because release failed",
+                )
         else:
             release_result = CommandResult(
                 command=release_command,
@@ -455,12 +489,28 @@ def _run_stage_one_combination(
                 stdout="",
                 stderr="release skipped because verify failed",
             )
+            pack_verify_result = CommandResult(
+                command=[
+                    sys.executable,
+                    "-m",
+                    "lifeguard",
+                    "compliance-pack-verify",
+                    "--pack",
+                    str(release_output / "compliance_pack"),
+                    "--signing-key-file",
+                    str(signing_key_path),
+                ],
+                return_code=1,
+                stdout="",
+                stderr="compliance pack verification skipped because release skipped",
+            )
     else:
         workspace_root = project_root.parent
         container_spec = f"/workspace/lifeguard/{spec_path.relative_to(project_root)}"
         container_evidence = f"/workspace/lifeguard/{evidence_path.relative_to(project_root)}"
         container_release_output = f"/workspace/lifeguard/{release_output.relative_to(project_root)}"
         container_signing_key = f"/workspace/lifeguard/{signing_key_path.relative_to(project_root)}"
+        container_pack_dir = f"{container_release_output}/compliance_pack"
         docker_env_args = _container_env_args(base_env)
         verify_command = [
             "docker",
@@ -513,6 +563,54 @@ def _run_stage_one_combination(
         verify_result = run_command(verify_command, cwd=project_root, env=base_env)
         if verify_result.return_code == 0:
             release_result = run_command(release_command, cwd=project_root, env=base_env)
+            if release_result.return_code == 0:
+                pack_verify_command = [
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{workspace_root}:/workspace",
+                    "-w",
+                    "/workspace/lifeguard",
+                    *docker_env_args,
+                    "-e",
+                    "PYTHONPATH=/workspace/lifeguard/src",
+                    CONTAINER_IMAGE,
+                    "-m",
+                    "lifeguard",
+                    "compliance-pack-verify",
+                    "--pack",
+                    container_pack_dir,
+                    "--signing-key-file",
+                    container_signing_key,
+                ]
+                pack_verify_result = run_command(pack_verify_command, cwd=project_root, env=base_env)
+            else:
+                pack_verify_result = CommandResult(
+                    command=[
+                        "docker",
+                        "run",
+                        "--rm",
+                        "-v",
+                        f"{workspace_root}:/workspace",
+                        "-w",
+                        "/workspace/lifeguard",
+                        *docker_env_args,
+                        "-e",
+                        "PYTHONPATH=/workspace/lifeguard/src",
+                        CONTAINER_IMAGE,
+                        "-m",
+                        "lifeguard",
+                        "compliance-pack-verify",
+                        "--pack",
+                        container_pack_dir,
+                        "--signing-key-file",
+                        container_signing_key,
+                    ],
+                    return_code=1,
+                    stdout="",
+                    stderr="compliance pack verification skipped because release failed",
+                )
         else:
             release_result = CommandResult(
                 command=release_command,
@@ -520,12 +618,44 @@ def _run_stage_one_combination(
                 stdout="",
                 stderr="release skipped because verify failed",
             )
+            pack_verify_result = CommandResult(
+                command=[
+                    "docker",
+                    "run",
+                    "--rm",
+                    "-v",
+                    f"{workspace_root}:/workspace",
+                    "-w",
+                    "/workspace/lifeguard",
+                    *docker_env_args,
+                    "-e",
+                    "PYTHONPATH=/workspace/lifeguard/src",
+                    CONTAINER_IMAGE,
+                    "-m",
+                    "lifeguard",
+                    "compliance-pack-verify",
+                    "--pack",
+                    container_pack_dir,
+                    "--signing-key-file",
+                    container_signing_key,
+                ],
+                return_code=1,
+                stdout="",
+                stderr="compliance pack verification skipped because release skipped",
+            )
 
     live_summary = _live_intelligence_event_summary(evidence_path)
     manifest_summary = _release_manifest_summary(release_output / "release_manifest.json")
+    pack_verify_payload = _parse_json_stdout(pack_verify_result)
+    pack_verify_passed = bool(
+        pack_verify_result.return_code == 0
+        and pack_verify_payload is not None
+        and bool(pack_verify_payload.get("passed", False))
+    )
     run_passed = (
         verify_result.return_code == 0
         and release_result.return_code == 0
+        and pack_verify_passed
         and live_summary["passed"]
         and manifest_summary["verification_passed"]
     )
@@ -539,6 +669,8 @@ def _run_stage_one_combination(
         "release_manifest_path": str(release_output / "release_manifest.json"),
         "verify_command": verify_result.to_dict(),
         "release_command": release_result.to_dict(),
+        "compliance_pack_verify_command": pack_verify_result.to_dict(),
+        "compliance_pack_verify": pack_verify_payload or {},
         "live_intelligence": live_summary,
         "release_manifest": manifest_summary,
     }

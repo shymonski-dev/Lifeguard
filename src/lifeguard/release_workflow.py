@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import hashlib
 import json
 import os
 import re
@@ -17,6 +16,7 @@ from .adapters import (
     LangGraphCompatibilityAdapter,
     ModelContextProtocolCompatibilityAdapter,
 )
+from .compliance_pack import CompliancePackError, build_compliance_pack
 from .evidence_store import EvidenceStore
 from .legislative_review import (
     LegislativeReviewError,
@@ -30,6 +30,7 @@ from .owasp_controls import (
     build_badge_material,
     evaluate_control_matrix_file,
 )
+from .release_anchor import compute_release_anchor_payload, sha256_file, sha256_json
 from .sigstore_signing import (
     CommandRunner,
     SigstoreConfigurationError,
@@ -52,72 +53,6 @@ _SIGNING_MODES = ("auto", "hmac", "sigstore")
 _DEFAULT_SIGSTORE_OIDC_ISSUER = "https://token.actions.githubusercontent.com"
 
 _PASS_RATE_PATTERN = re.compile(r"pass_rate=([0-9]+(?:\.[0-9]+)?)")
-
-
-def _sha256_hex(data: bytes) -> str:
-    return hashlib.sha256(data).hexdigest()
-
-
-def _sha256_json(payload: dict[str, Any]) -> str:
-    return _sha256_hex(json.dumps(payload, sort_keys=True).encode("utf-8"))
-
-
-def _sha256_file(path: Path) -> str:
-    return _sha256_hex(path.read_bytes())
-
-
-def compute_release_anchor_payload(manifest_path: str | Path) -> dict[str, Any]:
-    """Compute the external anchor payload for a signed release manifest.
-
-    This anchor can be stored outside the local machine (for example in a build log,
-    a signed tag, or a separate evidence archive) to make local evidence tampering
-    easier to detect.
-    """
-    target = Path(manifest_path)
-    try:
-        manifest = json.loads(target.read_text(encoding="utf-8"))
-    except OSError as exc:  # pragma: no cover - depends on filesystem failures
-        raise ValueError(f"Failed to read manifest: {exc}") from exc
-    except json.JSONDecodeError as exc:
-        raise ValueError(f"Manifest is not valid JSON: {exc}") from exc
-
-    if not isinstance(manifest, dict):
-        raise ValueError("Release manifest must be a JSON object.")
-
-    verification = manifest.get("verification", {})
-    evidence_path = ""
-    evidence_last_hash = ""
-    if isinstance(verification, dict):
-        evidence_path = str(verification.get("evidence_path", "") or "")
-        evidence_last_hash = str(verification.get("evidence_last_hash", "") or "")
-
-    anchor_block = manifest.get("anchor", {})
-    expected_body_sha256 = ""
-    repo_commit: str | None = None
-    if isinstance(anchor_block, dict):
-        expected_body_sha256 = str(anchor_block.get("manifest_body_sha256", "") or "")
-        repo_commit_value = anchor_block.get("repo_commit")
-        if isinstance(repo_commit_value, str) and repo_commit_value.strip():
-            repo_commit = repo_commit_value.strip()
-
-    manifest_without_signature = dict(manifest)
-    manifest_without_signature.pop("signature", None)
-    manifest_without_signature.pop("anchor", None)
-    computed_body_sha256 = _sha256_json(manifest_without_signature)
-    if expected_body_sha256 and expected_body_sha256 != computed_body_sha256:
-        raise ValueError("Manifest anchor body hash does not match computed manifest payload.")
-
-    return {
-        "created_at": manifest.get("created_at"),
-        "manifest_path": target.name,
-        "manifest_sha256": _sha256_file(target),
-        "manifest_body_sha256": expected_body_sha256 or computed_body_sha256,
-        "evidence_last_hash": evidence_last_hash,
-        "evidence_path": evidence_path,
-        "repo_commit": repo_commit,
-    }
-
-
 def _try_git_head_commit(repo_path: Path | None) -> str | None:
     if repo_path is None:
         return None
@@ -583,7 +518,7 @@ class ReleaseWorkflow:
                     control_matrix_summary=control_matrix_summary,
                     output_dir=target_dir,
                 )
-                manifest_body_sha256 = _sha256_json(candidate_manifest)
+                manifest_body_sha256 = sha256_json(candidate_manifest)
                 repo_commit = _try_git_head_commit(Path(repo_path) if repo_path is not None else None)
                 candidate_manifest["anchor"] = {
                     "manifest_body_sha256": manifest_body_sha256,
@@ -631,7 +566,7 @@ class ReleaseWorkflow:
                         "bundle_path": _relpath_for_manifest(sigstore_report.bundle_path, base=target_dir),
                         "bundle_sha256": sigstore_report.bundle_sha256,
                         "payload_path": payload_path.name,
-                        "payload_sha256": _sha256_file(payload_path),
+                        "payload_sha256": sha256_file(payload_path),
                         "verified": True,
                         "workflow_identity_name": sigstore_report.identity_policy.workflow_name,
                         "certificate_oidc_issuer": sigstore_report.identity_policy.certificate_oidc_issuer,
@@ -705,7 +640,7 @@ class ReleaseWorkflow:
                 control_matrix_summary=control_matrix_summary,
                 output_dir=target_dir,
             )
-            manifest_body_sha256 = _sha256_json(manifest)
+            manifest_body_sha256 = sha256_json(manifest)
             repo_commit = _try_git_head_commit(Path(repo_path) if repo_path is not None else None)
             manifest["anchor"] = {
                 "manifest_body_sha256": manifest_body_sha256,
@@ -726,6 +661,41 @@ class ReleaseWorkflow:
         anchor_path = target_dir / "release_anchor.json"
         anchor_payload = compute_release_anchor_payload(manifest_path)
         anchor_path.write_text(json.dumps(anchor_payload, indent=2) + "\n", encoding="utf-8")
+
+        try:
+            compliance_pack = build_compliance_pack(
+                spec=spec,
+                release_dir=target_dir,
+                evidence_path=verification_report.evidence_path,
+                control_matrix_path=Path(control_matrix_summary.matrix_path),
+            )
+        except CompliancePackError as exc:
+            self.evidence_store.append(
+                "release.compliance_pack.blocked",
+                "fail",
+                {
+                    "agent_name": spec.name,
+                    "error": str(exc),
+                },
+            )
+            return ReleaseReport(
+                passed=False,
+                verification_report=verification_report,
+                manifest_path=None,
+                signature=None,
+                failure_reason="compliance_pack_failed",
+            )
+
+        self.evidence_store.append(
+            "release.compliance_pack.created",
+            "pass",
+            {
+                "agent_name": spec.name,
+                "pack_dir": compliance_pack.pack_dir,
+                "pack_manifest": compliance_pack.manifest_path,
+                "artifact_count": compliance_pack.artifact_count,
+            },
+        )
 
         if sigstore_errors and not sigstore_used:
             self.evidence_store.append(

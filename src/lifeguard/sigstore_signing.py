@@ -111,6 +111,65 @@ def sign_and_verify_bundle(
     )
 
 
+def verify_bundle(
+    *,
+    artifact_path: str | Path,
+    bundle_path: str | Path,
+    repository: str,
+    workflow: str,
+    workflow_name: str,
+    certificate_oidc_issuer: str = "https://token.actions.githubusercontent.com",
+    command_runner: CommandRunner = default_sigstore_command_runner,
+) -> SigstoreBundleReport:
+    artifact = Path(artifact_path)
+    if not artifact.exists():
+        raise SigstoreConfigurationError(f"Sigstore artifact does not exist: {artifact}")
+
+    bundle = Path(bundle_path)
+    if not bundle.exists():
+        raise SigstoreConfigurationError(f"Sigstore bundle does not exist: {bundle}")
+
+    policy = SigstoreIdentityPolicy(
+        repository=repository.strip().strip("/"),
+        workflow=str(workflow).strip(),
+        workflow_name=str(workflow_name).strip(),
+        certificate_oidc_issuer=str(certificate_oidc_issuer).strip()
+        or "https://token.actions.githubusercontent.com",
+    )
+    if not policy.repository:
+        raise SigstoreConfigurationError("Sigstore repository must not be empty.")
+    if not policy.workflow_name:
+        raise SigstoreConfigurationError("Sigstore workflow name must not be empty.")
+
+    verify_command = [
+        "sigstore",
+        "verify",
+        "github",
+        "--bundle",
+        str(bundle),
+        "--repository",
+        policy.repository,
+        "--name",
+        policy.workflow_name,
+        str(artifact),
+    ]
+    verified = command_runner(verify_command)
+    if verified.returncode != 0:
+        raise SigstoreExecutionError(
+            "Sigstore verify command failed. "
+            f"exit_code={verified.returncode} stderr={verified.stderr.strip()}"
+        )
+
+    bundle_payload = _load_bundle_payload(bundle)
+    entries = _extract_transparency_log_entries(bundle_payload)
+    return SigstoreBundleReport(
+        bundle_path=bundle,
+        bundle_sha256=hashlib.sha256(bundle.read_bytes()).hexdigest(),
+        transparency_log_entries=tuple(entries),
+        identity_policy=policy,
+    )
+
+
 def _build_identity_policy(
     *,
     repository: str,

@@ -11,6 +11,7 @@ from lifeguard.adapters import (
     AdapterModuleStatus,
     AdapterTrustMetadata,
 )
+from lifeguard.compliance_pack import verify_compliance_pack
 from lifeguard.policy_compiler import compile_policy
 from lifeguard.release_workflow import default_release_workflow
 from lifeguard.signing import load_signing_key, verify_payload_signature
@@ -250,6 +251,11 @@ def test_release_workflow_writes_signed_manifest(tmp_path) -> None:
     assert anchor_payload["manifest_body_sha256"] == manifest_body_sha256
 
     assert str(anchor_payload["evidence_path"]).startswith("/") is False
+
+    pack_dir = output_dir / "compliance_pack"
+    assert (pack_dir / "pack_manifest.json").exists()
+    pack_report = verify_compliance_pack(pack_dir=pack_dir, signing_key_file=signing_key_file)
+    assert pack_report.passed is True
 
 
 def test_release_workflow_blocks_when_verification_fails(tmp_path) -> None:
@@ -692,3 +698,9 @@ def test_release_workflow_includes_legislative_review_pack_and_decision(tmp_path
     assert legislative["decision"]["decision"] == "accept"
     assert isinstance(legislative["pack"], dict)
     assert legislative["pack"]["spec_name"] == spec.name
+
+    pack_dir = output_dir / "compliance_pack"
+    assert (pack_dir / "legislative_review_pack.json").exists()
+    assert (pack_dir / "legislative_review_decision.json").exists()
+    pack_report = verify_compliance_pack(pack_dir=pack_dir, signing_key_file=signing_key_file)
+    assert pack_report.passed is True
