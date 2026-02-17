@@ -27,9 +27,10 @@ Status date: `2026-02-17`
 3. Applies runtime policy middleware checks to each declared tool command.
 4. Applies threat checks based on risk level.
 5. Runs a verification pipeline before release, including optional live intelligence freshness checks.
-6. Writes append-only evidence records with a hash chain.
-7. Runs deterministic adversarial validation packs and scores resilience by risk level.
-8. Supports optional deterministic LangGraph runtime execution with checkpoint, resume, and replay.
+6. Optionally runs a legislative review gate for the United Kingdom and European Union and requires a human decision record.
+7. Writes append-only evidence records with a hash chain.
+8. Runs deterministic adversarial validation packs and scores resilience by risk level.
+9. Supports optional deterministic LangGraph runtime execution with checkpoint, resume, and replay.
 
 ## Project layout
 
@@ -39,6 +40,7 @@ Status date: `2026-02-17`
 - `src/lifeguard/verification_pipeline.py`: Ordered verification steps.
 - `src/lifeguard/evidence_store.py`: Tamper-evident evidence log.
 - `src/lifeguard/live_intelligence.py`: Provider-backed live web intelligence with citations.
+- `src/lifeguard/legislative_review.py`: Legislative review pack and decision file validation.
 - `src/lifeguard/langgraph_runtime.py`: Deterministic LangGraph adapter runtime.
 - `src/lifeguard/open_source_guardrails.py`: Open source mode startup guardrails.
 - `src/lifeguard/release_workflow.py`: Adapter-backed release packaging with signature.
@@ -62,6 +64,7 @@ PYTHONPATH=src python3 -m lifeguard verify --spec spec.json --evidence evidence/
 PYTHONPATH=src python3 -m lifeguard resume --checkpoint checkpoints/<run>--003--compile_policy.json --evidence evidence/events_resume.jsonl --checkpoint-dir checkpoints_resume --approved-by security-reviewer --approval-id approval-001
 PYTHONPATH=src python3 -m lifeguard replay --checkpoint checkpoints/<run>--006--verification.json --evidence evidence/events_replay.jsonl --checkpoint-dir checkpoints_replay --approved-by security-reviewer --approval-id approval-001
 PYTHONPATH=src python3 -m lifeguard intelligence --spec spec.json
+PYTHONPATH=src python3 -m lifeguard legislative-review --spec spec.json --evidence evidence/events.jsonl
 PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter langchain --output compatibility/langchain_export.json
 PYTHONPATH=src python3 -m lifeguard compat-import --adapter langchain --input compatibility/langchain_export.json --output compatibility/lifeguard_from_langchain.json
 PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter langgraph --output compatibility/langgraph_export.json
@@ -108,6 +111,7 @@ Default starter profile:
 - This project is intentionally separate from the prior codebase.
 - Lifeguard uses a deterministic design method and blocks evolutionary process commands.
 - Lifeguard blocks agent specifications that indicate military or healthcare scope.
+- Legislative review is available for United Kingdom and European Union use cases and requires a human decision file when enabled.
 - Lifeguard uses extracted modules so core verification can run in minimal environments.
 - Lifeguard uses a hardened default container image for sandbox execution: `cgr.dev/chainguard/python:latest-dev`.
 - Network-enabled sandbox runs use an isolated internal Docker network plus a dedicated outbound gateway that enforces allowed hosts at runtime.
