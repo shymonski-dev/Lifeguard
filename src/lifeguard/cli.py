@@ -11,6 +11,7 @@ from .adapters import (
     ModelContextProtocolCompatibilityAdapter,
 )
 from .adversarial_reports import summarize_adversarial_history
+from .compliance_pack import verify_compliance_pack
 from .dashboard import write_dashboard
 from .langgraph_runtime import (
     LangGraphRuntimeError,
@@ -20,7 +21,8 @@ from .langgraph_runtime import (
 from .legislative_review import resolve_legislative_review_artifacts
 from .live_intelligence import LiveDataError, LiveIntelligenceClient
 from .open_source_guardrails import OpenSourceModeViolation, enforce_open_source_mode
-from .release_workflow import compute_release_anchor_payload, default_release_workflow
+from .release_anchor import compute_release_anchor_payload
+from .release_workflow import default_release_workflow
 from .spec_schema import (
     VALID_RISK_LEVELS,
     VALID_RUNTIME_ENVIRONMENTS,
@@ -324,6 +326,20 @@ def _build_parser() -> argparse.ArgumentParser:
     legislative_parser.add_argument(
         "--repo",
         help="Optional repository path for adapter-backed security preflight.",
+    )
+
+    compliance_verify_parser = subparsers.add_parser(
+        "compliance-pack-verify",
+        help="Verify a compliance pack directory.",
+    )
+    compliance_verify_parser.add_argument(
+        "--pack",
+        required=True,
+        help="Path to compliance pack directory.",
+    )
+    compliance_verify_parser.add_argument(
+        "--signing-key-file",
+        help="Signing key file path for key-based signatures.",
     )
 
     release_parser = subparsers.add_parser(
@@ -937,6 +953,29 @@ def _cmd_legislative_review(
     return 0 if result.passed else 1
 
 
+def _cmd_compliance_pack_verify(pack_path: str, signing_key_file: str | None) -> int:
+    try:
+        report = verify_compliance_pack(pack_dir=pack_path, signing_key_file=signing_key_file)
+    except (OSError, ValueError, json.JSONDecodeError) as exc:
+        print(
+            json.dumps(
+                {
+                    "passed": False,
+                    "checked_files": 0,
+                    "failures": [str(exc)],
+                    "pack_dir": pack_path,
+                },
+                indent=2,
+            )
+        )
+        return 1
+
+    payload = report.to_dict()
+    payload["pack_dir"] = str(pack_path)
+    print(json.dumps(payload, indent=2))
+    return 0 if report.passed else 1
+
+
 def _cmd_release(
     spec_path: str,
     evidence_path: str,
@@ -1149,6 +1188,11 @@ def main(argv: list[str] | None = None) -> int:
             spec_path=args.spec,
             evidence_path=args.evidence,
             repo_path=args.repo,
+        )
+    if args.command == "compliance-pack-verify":
+        return _cmd_compliance_pack_verify(
+            pack_path=args.pack,
+            signing_key_file=args.signing_key_file,
         )
     if args.command == "release":
         return _cmd_release(
