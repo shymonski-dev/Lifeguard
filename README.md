@@ -189,6 +189,15 @@ Lifeguard can enforce fresh, cited design intelligence during verification.
 9. Default managed profile file:
    - `trust_profiles/managed_trust_profiles.json`
 
+## Legislative review
+
+Lifeguard can optionally require a legislative review step for United Kingdom and European Union use cases.
+
+1. Add `legal_context` and `legislative_review` to the specification.
+2. Run `python3 -m lifeguard legislative-review --spec spec.json --evidence evidence/events.jsonl`. This writes `legislative_review_pack.json` and creates `legislative_review_decision.json` if it is missing.
+3. Record a human decision with `decision=accept` to allow verification and release to pass when `require_human_decision=true`.
+4. Managed trust profile defaults: United Kingdom uses `legislation_united_kingdom_primary`. European Union uses `legislation_european_union_primary`.
+
 ## Adversarial validation
 
 Lifeguard runs a deterministic adversarial pack during verification.

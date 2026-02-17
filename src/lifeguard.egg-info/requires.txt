@@ -1,7 +1,0 @@
-
-[dev]
-pytest>=8.0
-
-[graph_runtime]
-langchain>=1.0.0
-langgraph>=1.0.0
