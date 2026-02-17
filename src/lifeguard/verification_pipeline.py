@@ -137,6 +137,14 @@ class VerificationPipeline:
             evidence_path=self.evidence_store.path,
         )
 
+    def run_legislative_review(self, spec: AgentSpec) -> CheckResult:
+        """Run legislative review only.
+
+        This is used by the command line interface convenience command.
+        """
+
+        return self._check_legislative_review(spec)
+
     def _check_policy_compilation(
         self, spec: AgentSpec
     ) -> tuple[CheckResult, CompiledPolicy | None]:

@@ -263,6 +263,65 @@ class ReleaseWorkflow:
                 failure_reason="verification_failed",
             )
 
+        if spec.legislative_review.enabled:
+            artifacts = resolve_legislative_review_artifacts(
+                spec=spec,
+                evidence_path=verification_report.evidence_path,
+            )
+            errors: list[str] = []
+            decision_value: str | None = None
+            if not artifacts.pack_path.exists():
+                errors.append("Legislative review pack file is missing.")
+            if spec.legislative_review.require_human_decision:
+                if not artifacts.decision_path.exists():
+                    errors.append("Legislative review decision file is missing.")
+                else:
+                    try:
+                        raw_decision = load_json_file(artifacts.decision_path)
+                        decision = validate_legislative_decision(
+                            payload=raw_decision,
+                            spec=spec,
+                            required_jurisdictions=tuple(spec.legal_context.jurisdictions),
+                        )
+                        decision_value = str(decision.get("decision", "")).strip().lower()
+                        if decision_value != "accept":
+                            errors.append(
+                                "Legislative review decision must be accept for release."
+                            )
+                    except LegislativeReviewError as exc:
+                        errors.append(str(exc))
+
+            if errors:
+                self.evidence_store.append(
+                    "release.legislative_review.blocked",
+                    "fail",
+                    {
+                        "agent_name": spec.name,
+                        "pack_path": artifacts.pack_path,
+                        "decision_path": artifacts.decision_path,
+                        "errors": errors,
+                        "decision": decision_value,
+                    },
+                )
+                return ReleaseReport(
+                    passed=False,
+                    verification_report=verification_report,
+                    manifest_path=None,
+                    signature=None,
+                    failure_reason="legislative_review_blocked",
+                )
+
+            self.evidence_store.append(
+                "release.legislative_review.checked",
+                "pass",
+                {
+                    "agent_name": spec.name,
+                    "pack_path": artifacts.pack_path,
+                    "decision_path": artifacts.decision_path,
+                    "decision": decision_value or "accept",
+                },
+            )
+
         compatibility_gate = self._evaluate_compatibility_gate(spec)
         if not compatibility_gate.passed:
             self.evidence_store.append(

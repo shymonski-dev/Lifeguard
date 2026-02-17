@@ -17,6 +17,7 @@ from .langgraph_runtime import (
     LangGraphRuntimeReport,
     default_langgraph_runtime,
 )
+from .legislative_review import resolve_legislative_review_artifacts
 from .live_intelligence import LiveDataError, LiveIntelligenceClient
 from .open_source_guardrails import OpenSourceModeViolation, enforce_open_source_mode
 from .release_workflow import compute_release_anchor_payload, default_release_workflow
@@ -308,6 +309,21 @@ def _build_parser() -> argparse.ArgumentParser:
     intelligence_parser.add_argument(
         "--query",
         help="Optional query override. Defaults to live_data.query or specification description.",
+    )
+
+    legislative_parser = subparsers.add_parser(
+        "legislative-review",
+        help="Run legislative review and emit decision artifacts for human review.",
+    )
+    legislative_parser.add_argument("--spec", required=True, help="Path to the specification JSON.")
+    legislative_parser.add_argument(
+        "--evidence",
+        required=True,
+        help="Path to append-only evidence log file.",
+    )
+    legislative_parser.add_argument(
+        "--repo",
+        help="Optional repository path for adapter-backed security preflight.",
     )
 
     release_parser = subparsers.add_parser(
@@ -897,6 +913,30 @@ def _cmd_intelligence(spec_path: str, query_override: str | None) -> int:
     return 0
 
 
+def _cmd_legislative_review(
+    spec_path: str,
+    evidence_path: str,
+    repo_path: str | None,
+) -> int:
+    spec = load_spec(spec_path)
+    pipeline = default_pipeline(evidence_path, repo_path=repo_path)
+    result = pipeline.run_legislative_review(spec)
+    artifacts = resolve_legislative_review_artifacts(spec=spec, evidence_path=evidence_path)
+    print(
+        json.dumps(
+            {
+                "passed": result.passed,
+                "message": result.message,
+                "pack_path": str(artifacts.pack_path),
+                "decision_path": str(artifacts.decision_path),
+                "evidence": str(Path(evidence_path)),
+            },
+            indent=2,
+        )
+    )
+    return 0 if result.passed else 1
+
+
 def _cmd_release(
     spec_path: str,
     evidence_path: str,
@@ -1103,6 +1143,12 @@ def main(argv: list[str] | None = None) -> int:
         return _cmd_intelligence(
             spec_path=args.spec,
             query_override=args.query,
+        )
+    if args.command == "legislative-review":
+        return _cmd_legislative_review(
+            spec_path=args.spec,
+            evidence_path=args.evidence,
+            repo_path=args.repo,
         )
     if args.command == "release":
         return _cmd_release(
