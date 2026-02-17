@@ -17,6 +17,12 @@ _BANNED_EVOLUTION_TERMS = (
     "fitness",
 )
 
+_BANNED_APPLICATION_SECTORS = (
+    "military",
+    "healthcare",
+    "health care",
+)
+
 _FORBIDDEN_SHELL_SUBSTRINGS_ALWAYS = (
     "$(",
     "`",
@@ -136,6 +142,21 @@ def _find_inline_execution_flag(command: str) -> str | None:
     return None
 
 
+def _find_banned_application_sector(spec: AgentSpec) -> str | None:
+    parts = [
+        spec.name,
+        spec.description,
+        *spec.security_requirements.goals,
+        *spec.security_requirements.threat_actors,
+        *spec.security_requirements.evidence_requirements,
+    ]
+    lowered = " ".join(item.strip().lower() for item in parts if item.strip())
+    for term in _BANNED_APPLICATION_SECTORS:
+        if term in lowered:
+            return term
+    return None
+
+
 @dataclass(frozen=True)
 class CompiledPolicy:
     allowed_commands: tuple[str, ...]
@@ -148,6 +169,12 @@ class CompiledPolicy:
 
 
 def compile_policy(spec: AgentSpec) -> CompiledPolicy:
+    banned_sector = _find_banned_application_sector(spec)
+    if banned_sector is not None:
+        raise ConfigValidationError(
+            f"Agent specification includes forbidden sector term '{banned_sector}'."
+        )
+
     for tool in spec.tools:
         executable = _first_executable_token(tool.command)
         if executable in _FORBIDDEN_SHELL_EXECUTABLES:

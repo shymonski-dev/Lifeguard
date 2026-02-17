@@ -38,6 +38,34 @@ def test_network_tools_compile_with_allow_list() -> None:
     assert policy.network_mode == "allow_list"
 
 
+@pytest.mark.parametrize("term", ("military", "healthcare", "health care"))
+def test_rejects_banned_application_sector_terms_in_description(term: str) -> None:
+    with pytest.raises(ConfigValidationError):
+        compile_policy(
+            AgentSpec(
+                name="banned-sector-agent",
+                description=f"Agent intended for {term} workflows.",
+                risk_level="low",
+                tools=(
+                    ToolSpec(
+                        name="review",
+                        command="python review.py",
+                        can_access_network=False,
+                        timeout_seconds=15,
+                    ),
+                ),
+                data_scope=DataScope(
+                    read_paths=("/workspace",),
+                    write_paths=("/workspace/out",),
+                    allowed_hosts=(),
+                ),
+                runtime_environment="container",
+                budget_limit_usd=25.0,
+                max_runtime_seconds=300,
+            )
+        )
+
+
 def test_rejects_evolutionary_command_terms() -> None:
     with pytest.raises(ConfigValidationError):
         compile_policy(
