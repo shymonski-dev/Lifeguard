@@ -18,6 +18,13 @@ from .adapters import (
     ModelContextProtocolCompatibilityAdapter,
 )
 from .evidence_store import EvidenceStore
+from .legislative_review import (
+    LegislativeReviewError,
+    load_json_file,
+    resolve_legislative_review_artifacts,
+    validate_legislative_decision,
+)
+from .live_intelligence import LiveIntelligenceClient
 from .owasp_controls import (
     ControlMatrixSummary,
     build_badge_material,
@@ -203,10 +210,12 @@ class ReleaseWorkflow:
         evidence_store: EvidenceStore,
         adapter_layer: LifeguardExtractsAdapterLayer | None = None,
         sigstore_command_runner: CommandRunner | None = None,
+        intelligence_client: LiveIntelligenceClient | None = None,
     ) -> None:
         self.evidence_store = evidence_store
         self.adapter_layer = adapter_layer or LifeguardExtractsAdapterLayer()
         self.sigstore_command_runner = sigstore_command_runner
+        self.intelligence_client = intelligence_client
 
     def run(
         self,
@@ -231,6 +240,7 @@ class ReleaseWorkflow:
                 evidence_store=self.evidence_store,
                 adapter_layer=self.adapter_layer,
                 repo_path=Path(repo_path) if repo_path is not None else None,
+                intelligence_client=self.intelligence_client,
             )
             verification_report = verifier.run(spec)
         else:
@@ -736,6 +746,48 @@ class ReleaseWorkflow:
             for status in self.adapter_layer.list_module_status()
         ]
 
+        legislative_review_payload: dict[str, Any] = {"enabled": False}
+        if spec.legislative_review.enabled:
+            artifacts = resolve_legislative_review_artifacts(
+                spec=spec,
+                evidence_path=verification_report.evidence_path,
+            )
+            pack_payload: object | None = None
+            pack_error = ""
+            if artifacts.pack_path.exists():
+                try:
+                    pack_payload = load_json_file(artifacts.pack_path)
+                except LegislativeReviewError as exc:
+                    pack_error = str(exc)
+            else:
+                pack_error = "Legislative review pack file missing."
+
+            decision_payload: dict[str, Any] | None = None
+            decision_error = ""
+            if artifacts.decision_path.exists():
+                try:
+                    raw_decision = load_json_file(artifacts.decision_path)
+                    decision_payload = validate_legislative_decision(
+                        payload=raw_decision,
+                        spec=spec,
+                        required_jurisdictions=tuple(spec.legal_context.jurisdictions),
+                    )
+                except LegislativeReviewError as exc:
+                    decision_error = str(exc)
+            else:
+                decision_error = "Legislative decision file missing."
+
+            legislative_review_payload = {
+                "enabled": True,
+                "strict": spec.legislative_review.strict,
+                "require_human_decision": spec.legislative_review.require_human_decision,
+                "jurisdictions": list(spec.legal_context.jurisdictions),
+                "pack": pack_payload if isinstance(pack_payload, dict) else None,
+                "pack_error": pack_error or None,
+                "decision": decision_payload,
+                "decision_error": decision_error or None,
+            }
+
         return {
             "created_at": datetime.now(timezone.utc).isoformat(),
             "agent_spec": spec.to_dict(),
@@ -754,6 +806,7 @@ class ReleaseWorkflow:
                 "evidence_path": _relpath_for_manifest(verification_report.evidence_path, base=output_dir),
                 "evidence_last_hash": self.evidence_store.get_last_hash(),
             },
+            "legislative_review": legislative_review_payload,
             "compatibility_gate": {
                 "required": compatibility_gate.required,
                 "passed": compatibility_gate.passed,
@@ -1220,9 +1273,11 @@ def default_release_workflow(
     evidence_path: str | Path,
     adapter_layer: LifeguardExtractsAdapterLayer | None = None,
     sigstore_command_runner: CommandRunner | None = None,
+    intelligence_client: LiveIntelligenceClient | None = None,
 ) -> ReleaseWorkflow:
     return ReleaseWorkflow(
         evidence_store=EvidenceStore(evidence_path),
         adapter_layer=adapter_layer,
         sigstore_command_runner=sigstore_command_runner,
+        intelligence_client=intelligence_client,
     )

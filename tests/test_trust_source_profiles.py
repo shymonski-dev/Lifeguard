@@ -8,6 +8,7 @@ from lifeguard.spec_schema import LiveDataSettings
 from lifeguard.trust_source_profiles import (
     TrustSourceProfileError,
     apply_managed_trust_source_profile,
+    default_trust_source_profile_path,
     load_managed_trust_source_profiles,
 )
 
@@ -85,3 +86,10 @@ def test_apply_managed_profile_raises_when_missing(tmp_path) -> None:
     )
     with pytest.raises(TrustSourceProfileError):
         apply_managed_trust_source_profile(settings, "medium")
+
+
+def test_builtin_profiles_include_legislation_profiles() -> None:
+    profiles = load_managed_trust_source_profiles(default_trust_source_profile_path())
+    profile_ids = {profile.profile_id for profile in profiles}
+    assert "legislation_united_kingdom_primary" in profile_ids
+    assert "legislation_european_union_primary" in profile_ids

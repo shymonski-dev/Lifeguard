@@ -13,6 +13,15 @@ from .adapters import (
 from .adversarial_validation import evaluate_adversarial_pack
 from .adversarial_reports import AdversarialReportStore
 from .evidence_store import EvidenceStore
+from .legislative_review import (
+    LegislativeReviewError,
+    build_legislative_decision_template,
+    build_legislative_review_pack,
+    load_json_file,
+    payload_sha256,
+    resolve_legislative_review_artifacts,
+    validate_legislative_decision,
+)
 from .live_intelligence import (
     LiveDataConfigurationError,
     LiveDataError,
@@ -20,7 +29,7 @@ from .live_intelligence import (
     LiveIntelligenceClient,
 )
 from .policy_compiler import CompiledPolicy, compile_policy
-from .spec_schema import AgentSpec, ConfigValidationError, evaluate_spec_quality
+from .spec_schema import AgentSpec, ConfigValidationError, LiveDataSettings, evaluate_spec_quality
 from .threat_model import validate_policy_against_threats
 
 _SECRET_MARKERS = ("secret=", "token=", "password=", "-----begin")
@@ -96,6 +105,9 @@ class VerificationPipeline:
 
         live_data_result = self._check_live_intelligence(spec)
         results.append(live_data_result)
+
+        legislative_result = self._check_legislative_review(spec)
+        results.append(legislative_result)
 
         environment_result = self._check_runtime_environment(spec)
         results.append(environment_result)
@@ -411,6 +423,345 @@ class VerificationPipeline:
                     }
                     for citation in report.citations
                 ],
+            },
+        )
+        return result
+
+    def _check_legislative_review(self, spec: AgentSpec) -> CheckResult:
+        settings = spec.legislative_review
+        if not settings.enabled:
+            result = CheckResult(
+                name="legislative_review_gate",
+                passed=True,
+                message="Legislative review is disabled.",
+            )
+            self.evidence_store.append(result.name, "pass", {"enabled": False})
+            return result
+
+        jurisdictions = tuple(item.strip() for item in spec.legal_context.jurisdictions if item.strip())
+        if not jurisdictions:
+            result = CheckResult(
+                name="legislative_review_gate",
+                passed=False,
+                message="Legislative review jurisdictions must not be empty.",
+            )
+            self.evidence_store.append(result.name, "fail", {"enabled": True, "reason": "missing_jurisdictions"})
+            return result
+
+        jurisdiction_reports: list[tuple[str, LiveDataReport]] = []
+        jurisdiction_errors: list[dict[str, str]] = []
+
+        for jurisdiction in jurisdictions:
+            normalized = jurisdiction.lower()
+            trust_profile_id = ""
+            if normalized in {"united kingdom", "uk"}:
+                trust_profile_id = settings.united_kingdom_trust_profile_id.strip()
+            elif normalized in {"european union", "eu"}:
+                trust_profile_id = settings.european_union_trust_profile_id.strip()
+
+            if not trust_profile_id:
+                error = f"Unsupported legislative jurisdiction '{jurisdiction}'."
+                jurisdiction_errors.append({"jurisdiction": jurisdiction, "error": error})
+                self.evidence_store.append(
+                    "legislative_review.intelligence",
+                    "fail",
+                    {
+                        "jurisdiction": jurisdiction,
+                        "error": error,
+                        "error_type": "configuration",
+                    },
+                )
+                continue
+
+            target_date = spec.legal_context.compliance_target_date.strip() or "2026-08-02"
+            use_statement = spec.legal_context.intended_use.strip() or spec.description.strip()
+            query_parts = [
+                f"{jurisdiction} legal and regulatory obligations",
+                f"intended use: {use_statement}",
+                f"compliance target date: {target_date}",
+            ]
+            if spec.legal_context.sector.strip():
+                query_parts.append(f"sector: {spec.legal_context.sector.strip()}")
+            if spec.legal_context.data_categories:
+                query_parts.append("data categories: " + ", ".join(spec.legal_context.data_categories))
+            query = " | ".join(query_parts)
+
+            live_settings = LiveDataSettings(
+                enabled=True,
+                provider=settings.provider,
+                model=settings.model,
+                max_results=settings.max_results,
+                min_citations=settings.min_citations,
+                timeout_seconds=settings.timeout_seconds,
+                strict=settings.strict,
+                trust_profile_id=trust_profile_id,
+                trust_profile_file=settings.trust_profile_file,
+            )
+
+            try:
+                report = self.intelligence_client.collect_latest(
+                    query=query,
+                    settings=live_settings,
+                    risk_level=spec.risk_level,
+                )
+            except LiveDataError as exc:
+                attempt_details = _live_data_attempt_details(exc)
+                latest_citation_count = _last_attempt_citation_count(attempt_details)
+                error_type = "provider"
+                if isinstance(exc, LiveDataConfigurationError):
+                    error_type = "configuration"
+                jurisdiction_errors.append({"jurisdiction": jurisdiction, "error": str(exc)})
+                self.evidence_store.append(
+                    "legislative_review.intelligence",
+                    "fail",
+                    {
+                        "jurisdiction": jurisdiction,
+                        "provider": settings.provider,
+                        "model": settings.model,
+                        "query": query,
+                        "strict": settings.strict,
+                        "error": str(exc),
+                        "error_type": error_type,
+                        "attempts": attempt_details,
+                        "citation_count": latest_citation_count,
+                    },
+                )
+                continue
+
+            jurisdiction_reports.append((jurisdiction, report))
+            self.evidence_store.append(
+                "legislative_review.intelligence",
+                "pass",
+                {
+                    "jurisdiction": jurisdiction,
+                    "provider": report.provider,
+                    "model": report.model,
+                    "query": report.query,
+                    "fetched_at": report.fetched_at,
+                    "citation_count": len(report.citations),
+                    "attempts": [item.to_dict() for item in report.attempts],
+                    "trust_assessment": report.assessment.to_dict(),
+                    "citations": [
+                        {
+                            "url": citation.url,
+                            "title": citation.title,
+                            "domain": citation.domain,
+                            "trust_tier": citation.trust_tier,
+                            "source_type": citation.source_type,
+                            "published_at": citation.published_at,
+                            "freshness_window_days": citation.freshness_window_days,
+                            "age_days": citation.age_days,
+                            "is_fresh": citation.is_fresh,
+                        }
+                        for citation in report.citations
+                    ],
+                },
+            )
+
+        artifacts = resolve_legislative_review_artifacts(
+            spec=spec,
+            evidence_path=self.evidence_store.path,
+        )
+        pack = build_legislative_review_pack(
+            spec=spec,
+            jurisdiction_reports=tuple(jurisdiction_reports),
+        )
+        if jurisdiction_errors:
+            pack["jurisdiction_errors"] = jurisdiction_errors
+        pack_sha256 = payload_sha256(pack)
+
+        artifacts.pack_path.parent.mkdir(parents=True, exist_ok=True)
+        artifacts.pack_path.write_text(json.dumps(pack, indent=2) + "\n", encoding="utf-8")
+        self.evidence_store.append(
+            "legislative_review.pack.created",
+            "pass",
+            {
+                "pack_path": artifacts.pack_path,
+                "pack_sha256": pack_sha256,
+                "jurisdiction_count": len(jurisdictions),
+                "report_count": len(jurisdiction_reports),
+            },
+        )
+
+        if settings.require_human_decision:
+            if not artifacts.decision_path.exists():
+                template = build_legislative_decision_template(
+                    spec=spec,
+                    pack_sha256=pack_sha256,
+                    jurisdictions=jurisdictions,
+                )
+                artifacts.decision_path.parent.mkdir(parents=True, exist_ok=True)
+                artifacts.decision_path.write_text(
+                    json.dumps(template, indent=2) + "\n",
+                    encoding="utf-8",
+                )
+                self.evidence_store.append(
+                    "legislative_review.decision.checked",
+                    "fail",
+                    {
+                        "decision_path": artifacts.decision_path,
+                        "reason": "missing_decision_file",
+                        "template_created": True,
+                    },
+                )
+                result = CheckResult(
+                    name="legislative_review_gate",
+                    passed=False,
+                    message=f"Legislative decision file is required: {artifacts.decision_path}",
+                )
+                self.evidence_store.append(
+                    result.name,
+                    "fail",
+                    {
+                        "enabled": True,
+                        "decision_path": artifacts.decision_path,
+                        "pack_path": artifacts.pack_path,
+                        "pack_sha256": pack_sha256,
+                    },
+                )
+                return result
+
+            try:
+                decision_payload = load_json_file(artifacts.decision_path)
+                decision = validate_legislative_decision(
+                    payload=decision_payload,
+                    spec=spec,
+                    required_jurisdictions=jurisdictions,
+                )
+            except LegislativeReviewError as exc:
+                self.evidence_store.append(
+                    "legislative_review.decision.checked",
+                    "fail",
+                    {
+                        "decision_path": artifacts.decision_path,
+                        "error": str(exc),
+                    },
+                )
+                result = CheckResult(
+                    name="legislative_review_gate",
+                    passed=False,
+                    message=str(exc),
+                )
+                self.evidence_store.append(result.name, "fail", {"enabled": True, "error": str(exc)})
+                return result
+
+            if decision.get("decision") != "accept":
+                message = (
+                    "Legislative decision must be accept to pass verification. "
+                    f"Found decision={decision.get('decision')!r}."
+                )
+                self.evidence_store.append(
+                    "legislative_review.decision.checked",
+                    "fail",
+                    {
+                        "decision_path": artifacts.decision_path,
+                        "decision": decision.get("decision"),
+                        "reviewed_by": decision.get("reviewed_by"),
+                        "review_id": decision.get("review_id"),
+                        "reviewed_at": decision.get("reviewed_at"),
+                    },
+                )
+                result = CheckResult(
+                    name="legislative_review_gate",
+                    passed=False,
+                    message=message,
+                )
+                self.evidence_store.append(result.name, "fail", {"enabled": True, "decision": decision.get("decision")})
+                return result
+
+            self.evidence_store.append(
+                "legislative_review.decision.checked",
+                "pass",
+                {
+                    "decision_path": artifacts.decision_path,
+                    "decision": decision.get("decision"),
+                    "reviewed_by": decision.get("reviewed_by"),
+                    "review_id": decision.get("review_id"),
+                    "reviewed_at": decision.get("reviewed_at"),
+                },
+            )
+
+        intelligence_ok = not jurisdiction_errors and len(jurisdiction_reports) == len(jurisdictions)
+        if not intelligence_ok:
+            if settings.strict:
+                message = "Legislative intelligence failed: " + "; ".join(
+                    item.get("error", "") for item in jurisdiction_errors if item.get("error")
+                )
+                result = CheckResult(
+                    name="legislative_review_gate",
+                    passed=False,
+                    message=message.strip(),
+                )
+                self.evidence_store.append(
+                    result.name,
+                    "fail",
+                    {
+                        "enabled": True,
+                        "strict": settings.strict,
+                        "jurisdiction_errors": jurisdiction_errors,
+                    },
+                )
+                return result
+
+            if spec.risk_level in {"medium", "high"}:
+                message = (
+                    "Legislative intelligence failed and non-strict mode is not allowed for "
+                    f"risk level '{spec.risk_level}'."
+                )
+                result = CheckResult(
+                    name="legislative_review_gate",
+                    passed=False,
+                    message=message,
+                )
+                self.evidence_store.append(
+                    result.name,
+                    "fail",
+                    {
+                        "enabled": True,
+                        "strict": settings.strict,
+                        "strict_required_by_risk": True,
+                        "jurisdiction_errors": jurisdiction_errors,
+                    },
+                )
+                return result
+
+            warning = "; ".join(item.get("error", "") for item in jurisdiction_errors if item.get("error"))
+            result = CheckResult(
+                name="legislative_review_gate",
+                passed=True,
+                message=(
+                    "Legislative intelligence failed but strict mode is disabled: "
+                    + warning
+                ).strip(),
+            )
+            self.evidence_store.append(
+                result.name,
+                "pass",
+                {
+                    "enabled": True,
+                    "strict": settings.strict,
+                    "strict_required_by_risk": False,
+                    "warning": warning,
+                    "jurisdiction_errors": jurisdiction_errors,
+                },
+            )
+            return result
+
+        result = CheckResult(
+            name="legislative_review_gate",
+            passed=True,
+            message="Legislative intelligence and decision gate satisfied.",
+        )
+        self.evidence_store.append(
+            result.name,
+            "pass",
+            {
+                "enabled": True,
+                "strict": settings.strict,
+                "jurisdiction_count": len(jurisdictions),
+                "report_count": len(jurisdiction_reports),
+                "pack_path": artifacts.pack_path,
+                "decision_required": settings.require_human_decision,
             },
         )
         return result
