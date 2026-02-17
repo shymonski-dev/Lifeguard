@@ -5,6 +5,12 @@ Lifeguard is a standalone project for designing and verifying secure, tool-using
 
 The workflow uploads `sigstore_badge.json` and `owasp_control_badge.json` as run artifacts.
 
+Latest workflow validation record:
+
+1. Date: `2026-02-17`
+2. Result: success
+3. Workflow path: `.github/workflows/lifeguard.yml`
+
 ## Project status
 
 Status date: `2026-02-17`
@@ -60,7 +66,11 @@ PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter lan
 PYTHONPATH=src python3 -m lifeguard compat-import --adapter langchain --input compatibility/langchain_export.json --output compatibility/lifeguard_from_langchain.json
 PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter langgraph --output compatibility/langgraph_export.json
 PYTHONPATH=src python3 -m lifeguard compat-import --adapter langgraph --input compatibility/langgraph_export.json --output compatibility/lifeguard_from_langgraph.json
+PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter mcp --output compatibility/mcp_export.json
+PYTHONPATH=src python3 -m lifeguard compat-import --adapter mcp --input compatibility/mcp_export.json --output compatibility/lifeguard_from_mcp.json
 PYTHONPATH=src python3 -m lifeguard release --spec spec.json --evidence evidence/events.jsonl --output release_artifacts --runtime langgraph --checkpoint-dir checkpoints --approved-by security-reviewer --approval-id approval-001 --signing-key-file ./keys/release_signing.key
+PYTHONPATH=src python3 -m lifeguard release --spec spec_local.json --evidence evidence/events_local.jsonl --output release_sigstore --signing-mode sigstore --sigstore-repository owner/repository --sigstore-workflow .github/workflows/lifeguard.yml
+PYTHONPATH=src python3 -m lifeguard dashboard --validation-root validation --output validation/dashboard.html
 ```
 
 Completion validation entry points:
@@ -100,6 +110,10 @@ Default starter profile:
 - Lifeguard uses extracted modules so core verification can run in minimal environments.
 - Lifeguard uses a hardened default container image for sandbox execution: `cgr.dev/chainguard/python:latest-dev`.
 - Network-enabled sandbox runs use an isolated internal Docker network plus a dedicated outbound gateway that enforces allowed hosts at runtime.
+- Host network mode is blocked by policy even if `LIFEGUARD_SANDBOX_NETWORK=host` is set.
+- Unhardened container images are blocked by default. A two-part explicit override is required:
+  - `LIFEGUARD_ALLOW_UNHARDENED_IMAGE=1`
+  - `LIFEGUARD_ALLOW_UNHARDENED_IMAGE_ACK=I_UNDERSTAND_UNHARDENED_IMAGE_RISK`
 - Optional sandbox network controls:
   - `LIFEGUARD_SANDBOX_GATEWAY_IMAGE` for gateway image selection.
   - `LIFEGUARD_ALLOWED_EGRESS_PORTS` for gateway outbound ports (default `80,443`).
@@ -248,11 +262,14 @@ python scripts/check_open_source_licenses.py --allow-missing
    - `--sigstore-workflow` or `LIFEGUARD_SIGSTORE_WORKFLOW`
    - optional `--sigstore-bundle-path` or `LIFEGUARD_SIGSTORE_BUNDLE_PATH`
    - optional `--sigstore-certificate-oidc-issuer` or `LIFEGUARD_SIGSTORE_CERTIFICATE_OIDC_ISSUER`
-7. Control matrix gate:
+7. Sigstore recommendation:
+   - use `--signing-mode sigstore` in continuous integration workflows with identity token support
+   - use `--signing-mode auto` or `--signing-mode hmac` for local developer runs
+8. Control matrix gate:
    - release blocks when required control mappings are missing
    - default matrix file: `docs/compliance/owasp_control_matrix.json`
    - optional override: `--control-matrix-file`
-8. Release output now includes:
+9. Release output now includes:
    - `owasp_control_badge.json` badge material
    - `release_manifest_payload.json` when Sigstore signing is used
 
