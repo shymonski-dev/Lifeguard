@@ -58,9 +58,9 @@ PYTHONPATH=src python3 -m lifeguard init --path spec.json --profile secure_code_
 PYTHONPATH=src python3 -m lifeguard quality --spec spec.json
 PYTHONPATH=src python3 -m lifeguard verify --spec spec.json --evidence evidence/events.jsonl --repo /path/to/repo
 PYTHONPATH=src python3 -m lifeguard adversarial-report --evidence evidence/events.jsonl --limit 10
-PYTHONPATH=src python3 -m lifeguard verify --spec spec.json --evidence evidence/events.jsonl --runtime langgraph --checkpoint-dir checkpoints
-PYTHONPATH=src python3 -m lifeguard resume --checkpoint checkpoints/<run>--003--compile_policy.json --evidence evidence/events_resume.jsonl --checkpoint-dir checkpoints_resume
-PYTHONPATH=src python3 -m lifeguard replay --checkpoint checkpoints/<run>--006--verification.json --evidence evidence/events_replay.jsonl --checkpoint-dir checkpoints_replay
+PYTHONPATH=src python3 -m lifeguard verify --spec spec.json --evidence evidence/events.jsonl --runtime langgraph --checkpoint-dir checkpoints --approved-by security-reviewer --approval-id approval-001
+PYTHONPATH=src python3 -m lifeguard resume --checkpoint checkpoints/<run>--003--compile_policy.json --evidence evidence/events_resume.jsonl --checkpoint-dir checkpoints_resume --approved-by security-reviewer --approval-id approval-001
+PYTHONPATH=src python3 -m lifeguard replay --checkpoint checkpoints/<run>--006--verification.json --evidence evidence/events_replay.jsonl --checkpoint-dir checkpoints_replay --approved-by security-reviewer --approval-id approval-001
 PYTHONPATH=src python3 -m lifeguard intelligence --spec spec.json
 PYTHONPATH=src python3 -m lifeguard compat-export --spec spec.json --adapter langchain --output compatibility/langchain_export.json
 PYTHONPATH=src python3 -m lifeguard compat-import --adapter langchain --input compatibility/langchain_export.json --output compatibility/lifeguard_from_langchain.json
@@ -107,6 +107,7 @@ Default starter profile:
 
 - This project is intentionally separate from the prior codebase.
 - Lifeguard uses a deterministic design method and blocks evolutionary process commands.
+- Lifeguard blocks agent specifications that indicate military or healthcare scope.
 - Lifeguard uses extracted modules so core verification can run in minimal environments.
 - Lifeguard uses a hardened default container image for sandbox execution: `cgr.dev/chainguard/python:latest-dev`.
 - Network-enabled sandbox runs use an isolated internal Docker network plus a dedicated outbound gateway that enforces allowed hosts at runtime.
