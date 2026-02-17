@@ -1,6 +1,9 @@
 # Lifeguard
+[![Lifeguard Workflow](https://github.com/shymonski-dev/Lifeguard/actions/workflows/lifeguard.yml/badge.svg)](https://github.com/shymonski-dev/Lifeguard/actions/workflows/lifeguard.yml)
 
 Lifeguard is a standalone project for designing and verifying secure, tool-using agents.
+
+The workflow uploads `sigstore_badge.json` and `owasp_control_badge.json` as run artifacts.
 
 ## Project status
 
