@@ -1,0 +1,74 @@
+name: Lifeguard
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  lifeguard-tests:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Lifeguard and Sigstore
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install sigstore
+
+      - name: Run tests
+        run: pytest -q tests
+
+  lifeguard-sigstore-release:
+    needs: lifeguard-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Lifeguard and Sigstore
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install -e ".[dev]"
+          python -m pip install sigstore
+
+      - name: Run Sigstore release
+        run: |
+          lifeguard init --path /tmp/lifeguard_spec.json --profile secure_code_review_local --force
+          lifeguard release \
+            --spec /tmp/lifeguard_spec.json \
+            --evidence /tmp/lifeguard_evidence.jsonl \
+            --output /tmp/lifeguard_release_output \
+            --signing-mode sigstore \
+            --sigstore-repository "${{ github.repository }}" \
+            --sigstore-workflow ".github/workflows/lifeguard.yml"
+          test -f /tmp/lifeguard_release_output/release_manifest.json
+
+      - name: Validate Sigstore manifest fields
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+          payload = json.loads(Path("/tmp/lifeguard_release_output/release_manifest.json").read_text())
+          assert payload["signature"]["algorithm"] == "sigstore-bundle"
+          assert payload["signature"]["verified"] is True
+          assert payload["verification"]["passed"] is True
+          PY
