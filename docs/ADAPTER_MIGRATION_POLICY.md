@@ -10,8 +10,9 @@ Record date: `2026-02-17`
 
 1. Full completion run one: `validation/hardening_run_20260217_full_confidence_fix2_run1`
 2. Full completion run two: `validation/hardening_run_20260217_full_confidence_fix2_run2`
-3. Stage six signoff exists in both runs.
-4. Completion declaration: `validation/COMPLETION_DECLARATION.md`
+3. Additional revalidation run: `validation/legislative_review_20260217_full_escalated`
+4. Stage six signoff exists in both completion runs.
+5. Completion declaration: `validation/COMPLETION_DECLARATION.md`
 
 ## Contract Stability Rules
 

@@ -4,8 +4,13 @@
 .sigstore_cache/
 
 # Local build output
+build/
+dist/
+*.egg-info/
 wheelhouse/
-validation/
+validation/*
+!validation/COMPLETION_PLAN.md
+!validation/COMPLETION_DECLARATION.md
 
 # Local caches
 __pycache__/

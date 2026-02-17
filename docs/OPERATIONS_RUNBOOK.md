@@ -21,6 +21,7 @@ Optional provider key note:
 
 1. The smoke profile below runs without live intelligence.
 2. If you run a profile with live intelligence enabled, set one provider key: `OPENROUTER_API_KEY`, `OPENAI_API_KEY`, or `ANTHROPIC_API_KEY`.
+3. If you enable the legislative review gate, it also requires a provider key.
 
 ## 2. Create a Local Smoke Specification
 
@@ -34,13 +35,23 @@ python3 -m lifeguard init --path runbook/spec_local.json --force --profile secur
 python3 -m lifeguard verify --spec runbook/spec_local.json --evidence runbook/evidence_local.jsonl
 ```
 
-## 4. Generate Adversarial History Summary
+## 4. Run Legislative Review (optional)
+
+This is only required when `legislative_review.enabled=true` in the specification.
+
+```bash
+python3 -m lifeguard legislative-review --spec runbook/spec_local.json --evidence runbook/evidence_local.jsonl
+```
+
+If the decision file is missing, Lifeguard writes a template next to the evidence log. Fill it in and set `decision` to `accept`, then re-run `verify` and `release`.
+
+## 5. Generate Adversarial History Summary
 
 ```bash
 python3 -m lifeguard adversarial-report --evidence runbook/evidence_local.jsonl --limit 5
 ```
 
-## 5. Verify Evidence Hash Chain
+## 6. Verify Evidence Hash Chain
 
 ```bash
 python3 - <<'PY'
@@ -50,14 +61,16 @@ print({"passed": result.passed, "record_count": result.record_count, "failure_in
 PY
 ```
 
-## 6. Build Signed Release Artifacts (key based)
+## 7. Build Signed Release Artifacts (key based)
+
+Note: release is blocked when `legislative_review.enabled=true` and the human decision file is missing or not set to `accept`.
 
 ```bash
 printf "lifeguard-runbook-signing-key-material-123456789" > runbook/signing.key
 python3 -m lifeguard release --spec runbook/spec_local.json --evidence runbook/evidence_local.jsonl --output runbook/release --signing-key-file runbook/signing.key
 ```
 
-## 7. Build Signed Release Artifacts (Sigstore mode)
+## 8. Build Signed Release Artifacts (Sigstore mode)
 
 Use this command in a continuous integration environment where identity token support is enabled:
 
@@ -67,7 +80,7 @@ python3 -m lifeguard release --spec runbook/spec_local.json --evidence runbook/e
 
 For local developer runs, use `--signing-mode auto` or `--signing-mode hmac`.
 
-## 8. Run Deterministic Graph Runtime with Checkpoint
+## 9. Run Deterministic Graph Runtime with Checkpoint
 
 Optional dependency note:
 
@@ -79,31 +92,31 @@ python3 -m pip install -e ".[graph_runtime]"
 python3 -m lifeguard verify --spec runbook/spec_local.json --evidence runbook/evidence_graph.jsonl --runtime langgraph --checkpoint-dir runbook/checkpoints
 ```
 
-## 9. Resume from Checkpoint
+## 10. Resume from Checkpoint
 
 ```bash
 python3 -m lifeguard resume --checkpoint runbook/checkpoints/<checkpoint-file>.json --evidence runbook/evidence_resume.jsonl --checkpoint-dir runbook/checkpoints_resume
 ```
 
-## 10. Replay from Checkpoint
+## 11. Replay from Checkpoint
 
 ```bash
 python3 -m lifeguard replay --checkpoint runbook/checkpoints/<checkpoint-file>.json --evidence runbook/evidence_replay.jsonl --checkpoint-dir runbook/checkpoints_replay
 ```
 
-## 11. Trust Source Profile Review
+## 12. Trust Source Profile Review
 
 ```bash
 python3 -m lifeguard trust-source-profiles
 ```
 
-## 12. Build Verification Dashboard
+## 13. Build Verification Dashboard
 
 ```bash
 python3 -m lifeguard dashboard --validation-root validation --output validation/dashboard.html
 ```
 
-## 13. Completion Validation (Optional)
+## 14. Completion Validation (Optional)
 
 Writes stage output under `validation/`.
 
@@ -112,9 +125,10 @@ python3 scripts/run_completion_validation.py --stage stage-0
 python3 scripts/run_completion_validation.py --stage stage-1
 python3 scripts/run_completion_validation.py --stage all --validation-root validation/hardening_run_20260217_full_confidence_fix2_run1
 python3 scripts/run_completion_validation.py --stage all --validation-root validation/hardening_run_20260217_full_confidence_fix2_run2
+python3 scripts/run_completion_validation.py --stage all --validation-root validation/legislative_review_20260217_full_escalated
 ```
 
-## 14. Completion Record Review
+## 15. Completion Record Review
 
 ```bash
 cat validation/COMPLETION_DECLARATION.md
