@@ -1,0 +1,114 @@
+{
+  "framework": "owasp",
+  "framework_version": "llm-top-10-and-agentic-core-2026-02-17",
+  "controls": [
+    {
+      "id": "LLM01",
+      "name": "Prompt Injection",
+      "mapped_by": ["runtime_policy_middleware", "adversarial_validation"],
+      "tests": ["tests/test_runtime_policy_middleware.py", "tests/test_adversarial_validation.py"]
+    },
+    {
+      "id": "LLM02",
+      "name": "Insecure Output Handling",
+      "mapped_by": ["json_parser", "output_contracts"],
+      "tests": ["tests/test_output_contracts.py", "tests/test_adapter_contract.py"]
+    },
+    {
+      "id": "LLM03",
+      "name": "Training Data Poisoning",
+      "mapped_by": ["live_intelligence", "trust_source_profiles"],
+      "tests": ["tests/test_live_intelligence.py", "tests/test_trust_source_profiles.py"]
+    },
+    {
+      "id": "LLM04",
+      "name": "Model Denial Of Service",
+      "mapped_by": ["retry", "circuit_breaker", "live_intelligence"],
+      "tests": ["tests/test_live_intelligence.py", "tests/test_verification_pipeline.py"]
+    },
+    {
+      "id": "LLM05",
+      "name": "Supply Chain Vulnerabilities",
+      "mapped_by": ["open_source_guardrails", "security_preflight"],
+      "tests": ["tests/test_open_source_guardrails.py", "tests/test_extracts_adapter.py"]
+    },
+    {
+      "id": "LLM06",
+      "name": "Sensitive Information Disclosure",
+      "mapped_by": ["policy_compiler", "verification_pipeline", "evidence_store"],
+      "tests": ["tests/test_policy_compiler.py", "tests/test_evidence_store.py"]
+    },
+    {
+      "id": "LLM07",
+      "name": "Insecure Plugin Design",
+      "mapped_by": ["adapters", "compatibility_gate", "model_context_protocol_gating"],
+      "tests": ["tests/test_langchain_compat_adapter.py", "tests/test_mcp_compat_adapter.py"]
+    },
+    {
+      "id": "LLM08",
+      "name": "Excessive Agency",
+      "mapped_by": ["runtime_policy_middleware", "docker_sandbox", "tool_execution"],
+      "tests": ["tests/test_docker_sandbox.py", "tests/test_tool_execution.py"]
+    },
+    {
+      "id": "LLM09",
+      "name": "Overreliance",
+      "mapped_by": ["verification_pipeline", "threat_model", "live_intelligence_freshness"],
+      "tests": ["tests/test_verification_pipeline.py", "tests/test_threat_model.py"]
+    },
+    {
+      "id": "LLM10",
+      "name": "Model Theft",
+      "mapped_by": ["release_workflow", "signing", "anchor"],
+      "tests": ["tests/test_release_workflow.py", "tests/test_cli_anchor.py"]
+    },
+    {
+      "id": "AGENT01",
+      "name": "Tool Boundary Enforcement",
+      "mapped_by": ["runtime_policy_middleware", "docker_sandbox"],
+      "tests": ["tests/test_runtime_policy_middleware.py", "tests/test_docker_sandbox.py"]
+    },
+    {
+      "id": "AGENT02",
+      "name": "Network Egress Restriction",
+      "mapped_by": ["docker_sandbox", "policy_compiler"],
+      "tests": ["tests/test_docker_sandbox.py", "tests/test_policy_compiler.py"]
+    },
+    {
+      "id": "AGENT03",
+      "name": "Session Isolation",
+      "mapped_by": ["analyzer_usage", "context-bound usage tracking"],
+      "tests": ["tests/test_extracts_adapter.py", "tests/test_verification_pipeline.py"]
+    },
+    {
+      "id": "AGENT04",
+      "name": "Evidence Integrity",
+      "mapped_by": ["evidence_store", "release_anchor"],
+      "tests": ["tests/test_evidence_store.py", "tests/test_cli_anchor.py"]
+    },
+    {
+      "id": "AGENT05",
+      "name": "Adversarial Robustness",
+      "mapped_by": ["adversarial_validation", "adversarial_reports"],
+      "tests": ["tests/test_adversarial_validation.py", "tests/test_adversarial_reports.py"]
+    },
+    {
+      "id": "AGENT06",
+      "name": "Spec Validation",
+      "mapped_by": ["spec_schema", "verification_pipeline"],
+      "tests": ["tests/test_spec_schema_profiles.py", "tests/test_verification_pipeline.py"]
+    },
+    {
+      "id": "AGENT07",
+      "name": "Compatibility Safety Gate",
+      "mapped_by": ["release_workflow", "mcp_compat"],
+      "tests": ["tests/test_release_workflow.py", "tests/test_mcp_compat_adapter.py"]
+    },
+    {
+      "id": "AGENT08",
+      "name": "Fresh Intelligence Quality Gate",
+      "mapped_by": ["live_intelligence", "managed_trust_source_profiles"],
+      "tests": ["tests/test_live_intelligence.py", "tests/test_trust_source_profiles.py"]
+    }
+  ]
+}

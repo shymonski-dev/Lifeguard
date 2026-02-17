@@ -1,0 +1,34 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "lifeguard"
+version = "0.1.0"
+description = "Security-focused agent design and verification"
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+authors = [
+  { name = "Lifeguard Contributors" }
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=8.0"]
+graph_runtime = [
+  "langchain>=1.0.0",
+  "langgraph>=1.0.0",
+]
+
+[project.scripts]
+lifeguard = "lifeguard.cli:main"
+
+[tool.setuptools]
+package-dir = { "" = "src" }
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+lifeguard = ["trust_profiles/*.json"]
