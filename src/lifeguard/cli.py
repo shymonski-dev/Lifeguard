@@ -191,6 +191,24 @@ def _build_parser() -> argparse.ArgumentParser:
         "--resume-checkpoint",
         help="Optional checkpoint file path to resume from in Lang Graph runtime.",
     )
+    verify_parser.add_argument(
+        "--approved-by",
+        help=(
+            "Optional human approval identity used for tool execution gating in Lang Graph runtime. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    verify_parser.add_argument(
+        "--approval-id",
+        help=(
+            "Optional human approval identifier used for tool execution gating in Lang Graph runtime. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    verify_parser.add_argument(
+        "--approval-notes",
+        help="Optional human approval notes for tool execution gating metadata.",
+    )
 
     resume_parser = subparsers.add_parser(
         "resume",
@@ -218,6 +236,24 @@ def _build_parser() -> argparse.ArgumentParser:
         "--checkpoint-dir",
         help="Optional checkpoint directory for resumed run output.",
     )
+    resume_parser.add_argument(
+        "--approved-by",
+        help=(
+            "Optional human approval identity used for tool execution gating. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    resume_parser.add_argument(
+        "--approval-id",
+        help=(
+            "Optional human approval identifier used for tool execution gating. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    resume_parser.add_argument(
+        "--approval-notes",
+        help="Optional human approval notes for tool execution gating metadata.",
+    )
 
     replay_parser = subparsers.add_parser(
         "replay",
@@ -244,6 +280,24 @@ def _build_parser() -> argparse.ArgumentParser:
     replay_parser.add_argument(
         "--checkpoint-dir",
         help="Optional checkpoint directory for replay output.",
+    )
+    replay_parser.add_argument(
+        "--approved-by",
+        help=(
+            "Optional human approval identity used for tool execution gating. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    replay_parser.add_argument(
+        "--approval-id",
+        help=(
+            "Optional human approval identifier used for tool execution gating. "
+            "Required when executing tools that can access network or write files."
+        ),
+    )
+    replay_parser.add_argument(
+        "--approval-notes",
+        help="Optional human approval notes for tool execution gating metadata.",
     )
 
     intelligence_parser = subparsers.add_parser(
@@ -682,6 +736,9 @@ def _cmd_verify(
     runtime: str,
     checkpoint_dir: str | None,
     resume_checkpoint: str | None,
+    approved_by: str | None,
+    approval_id: str | None,
+    approval_notes: str | None,
 ) -> int:
     spec = load_spec(spec_path)
     if runtime == "langgraph":
@@ -691,6 +748,9 @@ def _cmd_verify(
                 spec=spec,
                 checkpoint_dir=checkpoint_dir,
                 resume_from=resume_checkpoint,
+                approved_by=approved_by,
+                approval_id=approval_id,
+                approval_notes=approval_notes,
             )
         except LangGraphRuntimeError as exc:
             print(json.dumps({"passed": False, "error": str(exc)}, indent=2))
@@ -719,6 +779,9 @@ def _cmd_resume(
     spec_path: str | None,
     repo_path: str | None,
     checkpoint_dir: str | None,
+    approved_by: str | None,
+    approval_id: str | None,
+    approval_notes: str | None,
 ) -> int:
     runtime_adapter = default_langgraph_runtime(evidence_path, repo_path=repo_path)
     spec = load_spec(spec_path) if spec_path is not None else None
@@ -727,6 +790,9 @@ def _cmd_resume(
             checkpoint_path=checkpoint_path,
             spec=spec,
             checkpoint_dir=checkpoint_dir,
+            approved_by=approved_by,
+            approval_id=approval_id,
+            approval_notes=approval_notes,
         )
     except LangGraphRuntimeError as exc:
         print(json.dumps({"passed": False, "error": str(exc)}, indent=2))
@@ -746,6 +812,9 @@ def _cmd_replay(
     spec_path: str | None,
     repo_path: str | None,
     checkpoint_dir: str | None,
+    approved_by: str | None,
+    approval_id: str | None,
+    approval_notes: str | None,
 ) -> int:
     runtime_adapter = default_langgraph_runtime(evidence_path, repo_path=repo_path)
     spec = load_spec(spec_path) if spec_path is not None else None
@@ -754,6 +823,9 @@ def _cmd_replay(
             checkpoint_path=checkpoint_path,
             spec=spec,
             checkpoint_dir=checkpoint_dir,
+            approved_by=approved_by,
+            approval_id=approval_id,
+            approval_notes=approval_notes,
         )
     except LangGraphRuntimeError as exc:
         print(json.dumps({"passed": False, "error": str(exc)}, indent=2))
@@ -856,12 +928,18 @@ def _cmd_release(
                     checkpoint_path=replay_checkpoint,
                     spec=spec,
                     checkpoint_dir=checkpoint_dir,
+                    approved_by=approved_by,
+                    approval_id=approval_id,
+                    approval_notes=approval_notes,
                 )
             else:
                 runtime_report = runtime_adapter.run(
                     spec=spec,
                     checkpoint_dir=checkpoint_dir,
                     resume_from=resume_checkpoint,
+                    approved_by=approved_by,
+                    approval_id=approval_id,
+                    approval_notes=approval_notes,
                 )
         except LangGraphRuntimeError as exc:
             print(json.dumps({"passed": False, "error": str(exc)}, indent=2))
@@ -995,6 +1073,9 @@ def main(argv: list[str] | None = None) -> int:
             runtime=args.runtime,
             checkpoint_dir=args.checkpoint_dir,
             resume_checkpoint=args.resume_checkpoint,
+            approved_by=args.approved_by,
+            approval_id=args.approval_id,
+            approval_notes=args.approval_notes,
         )
     if args.command == "resume":
         return _cmd_resume(
@@ -1003,6 +1084,9 @@ def main(argv: list[str] | None = None) -> int:
             spec_path=args.spec,
             repo_path=args.repo,
             checkpoint_dir=args.checkpoint_dir,
+            approved_by=args.approved_by,
+            approval_id=args.approval_id,
+            approval_notes=args.approval_notes,
         )
     if args.command == "replay":
         return _cmd_replay(
@@ -1011,6 +1095,9 @@ def main(argv: list[str] | None = None) -> int:
             spec_path=args.spec,
             repo_path=args.repo,
             checkpoint_dir=args.checkpoint_dir,
+            approved_by=args.approved_by,
+            approval_id=args.approval_id,
+            approval_notes=args.approval_notes,
         )
     if args.command == "intelligence":
         return _cmd_intelligence(

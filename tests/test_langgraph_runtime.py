@@ -412,3 +412,87 @@ def test_langgraph_runtime_enforces_execution_path_across_runtime_environments(
 
     assert report.passed is True
     assert tool_executor.runtime_environments == [runtime_environment]
+
+
+class _RaisingToolExecutor:
+    def execute_spec_tools(self, *, spec, policy):
+        del spec, policy
+        raise AssertionError("Tool executor should not be invoked when approval is missing.")
+
+
+def test_langgraph_runtime_blocks_network_or_write_tools_without_approval(tmp_path, monkeypatch) -> None:
+    _clear_guard_env(monkeypatch)
+    evidence = tmp_path / "events.jsonl"
+    runtime = default_langgraph_runtime(
+        evidence_path=evidence,
+        adapter_layer=_FakeAdapterLayer(),
+        graph_runner_factory=_sequential_graph_runner_factory,
+        tool_executor=_RaisingToolExecutor(),  # type: ignore[arg-type]
+    )
+    spec = replace(
+        _base_spec(),
+        tools=(
+            ToolSpec(
+                name="write_report",
+                command="python write_report.py",
+                can_write_files=True,
+                can_access_network=False,
+                timeout_seconds=30,
+            ),
+        ),
+        data_scope=DataScope(
+            read_paths=("/workspace",),
+            write_paths=("/workspace/reports",),
+            allowed_hosts=(),
+        ),
+    )
+    report = runtime.run(spec=spec, checkpoint_dir=tmp_path / "checkpoints")
+
+    assert report.passed is False
+    assert any(
+        result.name == "tool_execution_gate" and not result.passed
+        for result in report.verification_report.results
+    )
+    event_text = evidence.read_text(encoding="utf-8")
+    assert "langgraph.runtime.tool_execution.approval_gate" in event_text
+    assert "Human approval is required" in event_text
+
+
+def test_langgraph_runtime_allows_network_or_write_tools_with_approval(tmp_path, monkeypatch) -> None:
+    _clear_guard_env(monkeypatch)
+    evidence = tmp_path / "events.jsonl"
+    tool_executor = _CapturingToolExecutor()
+    runtime = default_langgraph_runtime(
+        evidence_path=evidence,
+        adapter_layer=_FakeAdapterLayer(),
+        graph_runner_factory=_sequential_graph_runner_factory,
+        tool_executor=tool_executor,
+    )
+    spec = replace(
+        _base_spec(),
+        tools=(
+            ToolSpec(
+                name="write_report",
+                command="python write_report.py",
+                can_write_files=True,
+                can_access_network=False,
+                timeout_seconds=30,
+            ),
+        ),
+        data_scope=DataScope(
+            read_paths=("/workspace",),
+            write_paths=("/workspace/reports",),
+            allowed_hosts=(),
+        ),
+    )
+    report = runtime.run(
+        spec=spec,
+        checkpoint_dir=tmp_path / "checkpoints",
+        approved_by="compliance-reviewer",
+        approval_id="approval-001",
+    )
+
+    assert report.passed is True
+    assert tool_executor.runtime_environments == ["container"]
+    event_text = evidence.read_text(encoding="utf-8")
+    assert "langgraph.runtime.tool_execution.approval_gate" in event_text

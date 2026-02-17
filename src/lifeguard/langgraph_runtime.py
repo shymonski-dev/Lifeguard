@@ -15,7 +15,7 @@ from .policy_compiler import CompiledPolicy, compile_policy
 from .runtime_policy_middleware import PolicyExecutionMiddleware
 from .spec_schema import AgentSpec, ConfigValidationError, load_spec
 from .threat_model import validate_policy_against_threats
-from .tool_execution import ToolExecutionEngine
+from .tool_execution import ToolExecutionEngine, ToolExecutionResult
 from .verification_pipeline import CheckResult, VerificationPipeline, VerificationReport
 
 
@@ -85,6 +85,9 @@ class LangGraphRuntimeAdapter:
             repo_path=self.repo_path,
             intelligence_client=self.intelligence_client,
         )
+        self._approved_by = ""
+        self._approval_id = ""
+        self._approval_notes = ""
 
     def run(
         self,
@@ -93,34 +96,45 @@ class LangGraphRuntimeAdapter:
         run_id: str | None = None,
         checkpoint_dir: str | Path | None = None,
         resume_from: str | Path | None = None,
+        approved_by: str | None = None,
+        approval_id: str | None = None,
+        approval_notes: str | None = None,
     ) -> LangGraphRuntimeReport:
+        previous_approval = (self._approved_by, self._approval_id, self._approval_notes)
+        self._approved_by = approved_by.strip() if approved_by else ""
+        self._approval_id = approval_id.strip() if approval_id else ""
+        self._approval_notes = approval_notes.strip() if approval_notes else ""
         try:
             enforce_open_source_mode()
         except OpenSourceModeViolation as exc:
+            self._approved_by, self._approval_id, self._approval_notes = previous_approval
             raise LangGraphRuntimeError(str(exc)) from exc
 
-        checkpoint_root = (
-            Path(checkpoint_dir)
-            if checkpoint_dir is not None
-            else self.evidence_store.path.parent / "checkpoints"
-        )
-        checkpoint_store = RuntimeCheckpointStore(checkpoint_root)
-        initial_state, resolved_run_id, resumed_from_path = self._load_initial_state(
-            checkpoint_store=checkpoint_store,
-            spec=spec,
-            spec_path=spec_path,
-            run_id=run_id,
-            resume_from=resume_from,
-        )
+        try:
+            checkpoint_root = (
+                Path(checkpoint_dir)
+                if checkpoint_dir is not None
+                else self.evidence_store.path.parent / "checkpoints"
+            )
+            checkpoint_store = RuntimeCheckpointStore(checkpoint_root)
+            initial_state, resolved_run_id, resumed_from_path = self._load_initial_state(
+                checkpoint_store=checkpoint_store,
+                spec=spec,
+                spec_path=spec_path,
+                run_id=run_id,
+                resume_from=resume_from,
+            )
 
-        graph_nodes = self._graph_nodes(checkpoint_store=checkpoint_store)
-        graph_runner = self._graph_runner_factory(graph_nodes)
-        final_state = graph_runner.invoke(initial_state)
-        return self._build_runtime_report(
-            state=final_state,
-            run_id=resolved_run_id,
-            resumed_from=resumed_from_path,
-        )
+            graph_nodes = self._graph_nodes(checkpoint_store=checkpoint_store)
+            graph_runner = self._graph_runner_factory(graph_nodes)
+            final_state = graph_runner.invoke(initial_state)
+            return self._build_runtime_report(
+                state=final_state,
+                run_id=resolved_run_id,
+                resumed_from=resumed_from_path,
+            )
+        finally:
+            self._approved_by, self._approval_id, self._approval_notes = previous_approval
 
     def resume(
         self,
@@ -129,6 +143,9 @@ class LangGraphRuntimeAdapter:
         spec_path: str | Path | None = None,
         run_id: str | None = None,
         checkpoint_dir: str | Path | None = None,
+        approved_by: str | None = None,
+        approval_id: str | None = None,
+        approval_notes: str | None = None,
     ) -> LangGraphRuntimeReport:
         return self.run(
             spec=spec,
@@ -136,6 +153,9 @@ class LangGraphRuntimeAdapter:
             run_id=run_id,
             checkpoint_dir=checkpoint_dir,
             resume_from=checkpoint_path,
+            approved_by=approved_by,
+            approval_id=approval_id,
+            approval_notes=approval_notes,
         )
 
     def replay(
@@ -145,6 +165,9 @@ class LangGraphRuntimeAdapter:
         spec_path: str | Path | None = None,
         run_id: str | None = None,
         checkpoint_dir: str | Path | None = None,
+        approved_by: str | None = None,
+        approval_id: str | None = None,
+        approval_notes: str | None = None,
     ) -> LangGraphRuntimeReport:
         checkpoint_target = Path(checkpoint_path)
         checkpoint_root = (
@@ -162,6 +185,9 @@ class LangGraphRuntimeAdapter:
             run_id=replay_run_id,
             checkpoint_dir=checkpoint_root,
             resume_from=checkpoint_target,
+            approved_by=approved_by,
+            approval_id=approval_id,
+            approval_notes=approval_notes,
         )
 
         baseline_signature = _comparison_signature_from_state(baseline_checkpoint.state)
@@ -530,7 +556,88 @@ class LangGraphRuntimeAdapter:
                 "tool_execution_error": None,
             }
 
-        results = self.tool_executor.execute_spec_tools(spec=spec, policy=policy)
+        approval_required_indexes = [
+            index
+            for index, tool in enumerate(spec.tools)
+            if tool.can_access_network or tool.can_write_files
+        ]
+        approval_required = bool(approval_required_indexes)
+        approval_provided = bool(self._approved_by and self._approval_id)
+        blocked_indexes = (
+            set(approval_required_indexes) if approval_required and not approval_provided else set()
+        )
+        blocked_tools = [spec.tools[index].name for index in sorted(blocked_indexes)]
+        if blocked_indexes:
+            self.evidence_store.append(
+                "langgraph.runtime.tool_execution.approval_gate",
+                "fail",
+                {
+                    "approval_required": approval_required,
+                    "approval_provided": approval_provided,
+                    "blocked_tool_count": len(blocked_indexes),
+                    "blocked_tools": blocked_tools,
+                    "reason": (
+                        "Human approval is required for tools that can access network "
+                        "or write files."
+                    ),
+                    "approved_by": self._approved_by or None,
+                    "approval_id": self._approval_id or None,
+                },
+            )
+        else:
+            self.evidence_store.append(
+                "langgraph.runtime.tool_execution.approval_gate",
+                "pass",
+                {
+                    "approval_required": approval_required,
+                    "approval_provided": approval_provided,
+                    "blocked_tool_count": 0,
+                    "blocked_tools": (),
+                    "reason": "",
+                    "approved_by": self._approved_by or None,
+                    "approval_id": self._approval_id or None,
+                },
+            )
+
+        executed_results: tuple[ToolExecutionResult, ...] = ()
+        if blocked_indexes:
+            tools_to_execute = [
+                tool for index, tool in enumerate(spec.tools) if index not in blocked_indexes
+            ]
+            if tools_to_execute:
+                executed_spec = replace(spec, tools=tuple(tools_to_execute))
+                executed_results = self.tool_executor.execute_spec_tools(
+                    spec=executed_spec,
+                    policy=policy,
+                )
+        else:
+            executed_results = self.tool_executor.execute_spec_tools(spec=spec, policy=policy)
+
+        executed_iter = iter(executed_results)
+        merged_results: list[ToolExecutionResult] = []
+        for index, tool in enumerate(spec.tools):
+            if index in blocked_indexes:
+                merged_results.append(
+                    ToolExecutionResult(
+                        tool_name=tool.name,
+                        command=tool.command,
+                        runtime_environment=spec.runtime_environment,
+                        backend="approval_gate",
+                        image=getattr(self.tool_executor, "image", ""),
+                        passed=False,
+                        exit_code=1,
+                        stdout="",
+                        stderr="",
+                        reason=(
+                            "Human approval is required for tools that can access network "
+                            "or write files."
+                        ),
+                        policy_violations=(),
+                    )
+                )
+            else:
+                merged_results.append(next(executed_iter))
+        results = tuple(merged_results)
         result_payload = tuple(item.to_dict() for item in results)
         passed = all(bool(item.get("passed", False)) for item in result_payload) if result_payload else True
         failed_count = len([item for item in result_payload if not bool(item.get("passed", False))])
