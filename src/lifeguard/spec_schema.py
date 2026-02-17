@@ -15,6 +15,7 @@ VALID_RUNTIME_ENVIRONMENTS = {"local", "container", "continuous_integration"}
 VALID_DESIGN_METHODS = {"deterministic"}
 VALID_LIVE_DATA_PROVIDERS = {"openrouter", "openai", "anthropic"}
 VALID_PROFILE_IDS = {"custom"}
+VALID_DECISION_IMPACT_LEVELS = {"low", "medium", "high"}
 
 _QUALITY_THRESHOLD_BY_RISK = {"low": 70, "medium": 80, "high": 90}
 
@@ -77,6 +78,46 @@ class SecurityRequirements:
             self.evidence_requirements,
             "security_requirements.evidence_requirements",
         )
+
+
+@dataclass(frozen=True)
+class LegalContext:
+    jurisdictions: tuple[str, ...] = ("United Kingdom", "European Union")
+    intended_use: str = ""
+    sector: str = ""
+    decision_impact_level: str = "medium"
+    compliance_target_date: str = ""
+    data_categories: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not self.jurisdictions:
+            raise ConfigValidationError("legal_context.jurisdictions must not be empty.")
+        _validate_line_entries(self.jurisdictions, "legal_context.jurisdictions")
+        _validate_line_entries(self.data_categories, "legal_context.data_categories")
+
+        for value, name in (
+            (self.intended_use, "legal_context.intended_use"),
+            (self.sector, "legal_context.sector"),
+            (self.decision_impact_level, "legal_context.decision_impact_level"),
+            (self.compliance_target_date, "legal_context.compliance_target_date"),
+        ):
+            if "\n" in value:
+                raise ConfigValidationError(f"{name} must be a single line.")
+
+        impact = self.decision_impact_level.strip().lower()
+        if impact and impact not in VALID_DECISION_IMPACT_LEVELS:
+            raise ConfigValidationError(
+                "legal_context.decision_impact_level must be one of "
+                f"{sorted(VALID_DECISION_IMPACT_LEVELS)}."
+            )
+
+        if self.compliance_target_date.strip():
+            cleaned = self.compliance_target_date.strip()
+            # ISO date only (YYYY-MM-DD) keeps this strict and deterministic.
+            if len(cleaned) != 10 or cleaned[4] != "-" or cleaned[7] != "-":
+                raise ConfigValidationError(
+                    "legal_context.compliance_target_date must be an ISO date (YYYY-MM-DD)."
+                )
 
 
 @dataclass(frozen=True)
@@ -168,6 +209,61 @@ class LiveDataSettings:
 
 
 @dataclass(frozen=True)
+class LegislativeReviewSettings:
+    enabled: bool = False
+    provider: str = "openrouter"
+    model: str = "openai/gpt-5.2:online"
+    max_results: int = 6
+    min_citations: int = 2
+    timeout_seconds: int = 60
+    trust_profile_file: str = ""
+    united_kingdom_trust_profile_id: str = "legislation_united_kingdom_primary"
+    european_union_trust_profile_id: str = "legislation_european_union_primary"
+    strict: bool = True
+    require_human_decision: bool = True
+    decision_file: str = ""
+
+    def __post_init__(self) -> None:
+        if self.provider not in VALID_LIVE_DATA_PROVIDERS:
+            raise ConfigValidationError(
+                "legislative_review.provider must be one of "
+                f"{sorted(VALID_LIVE_DATA_PROVIDERS)}."
+            )
+        if not self.model.strip():
+            raise ConfigValidationError("legislative_review.model must not be empty.")
+        if self.max_results < 1 or self.max_results > 10:
+            raise ConfigValidationError(
+                "legislative_review.max_results must be between 1 and 10."
+            )
+        if self.min_citations < 1:
+            raise ConfigValidationError(
+                "legislative_review.min_citations must be at least 1."
+            )
+        if self.min_citations > self.max_results:
+            raise ConfigValidationError(
+                "legislative_review.min_citations must be less than or equal to legislative_review.max_results."
+            )
+        if self.timeout_seconds < 5 or self.timeout_seconds > 180:
+            raise ConfigValidationError(
+                "legislative_review.timeout_seconds must be between 5 and 180."
+            )
+        for value, name in (
+            (self.trust_profile_file, "legislative_review.trust_profile_file"),
+            (
+                self.united_kingdom_trust_profile_id,
+                "legislative_review.united_kingdom_trust_profile_id",
+            ),
+            (
+                self.european_union_trust_profile_id,
+                "legislative_review.european_union_trust_profile_id",
+            ),
+            (self.decision_file, "legislative_review.decision_file"),
+        ):
+            if "\n" in value:
+                raise ConfigValidationError(f"{name} must be a single line.")
+
+
+@dataclass(frozen=True)
 class AgentSpec:
     name: str
     description: str
@@ -180,6 +276,8 @@ class AgentSpec:
     design_method: str = "deterministic"
     profile_id: str = "custom"
     security_requirements: SecurityRequirements = field(default_factory=SecurityRequirements)
+    legal_context: LegalContext = field(default_factory=LegalContext)
+    legislative_review: LegislativeReviewSettings = field(default_factory=LegislativeReviewSettings)
     live_data: LiveDataSettings = field(default_factory=LiveDataSettings)
 
     def __post_init__(self) -> None:
@@ -243,6 +341,50 @@ class AgentSpec:
             read_paths=tuple(str(p) for p in data_scope_payload.get("read_paths", [])),
             write_paths=tuple(str(p) for p in data_scope_payload.get("write_paths", [])),
             allowed_hosts=tuple(str(h) for h in data_scope_payload.get("allowed_hosts", [])),
+        )
+
+        legal_payload = payload.get("legal_context", {})
+        if not isinstance(legal_payload, dict):
+            raise ConfigValidationError("'legal_context' must be an object.")
+        jurisdictions_raw = tuple(str(item).strip() for item in legal_payload.get("jurisdictions", []))
+        legal_context = LegalContext(
+            jurisdictions=jurisdictions_raw or LegalContext().jurisdictions,
+            intended_use=str(legal_payload.get("intended_use", "")).strip(),
+            sector=str(legal_payload.get("sector", "")).strip(),
+            decision_impact_level=str(legal_payload.get("decision_impact_level", "medium")).strip(),
+            compliance_target_date=str(legal_payload.get("compliance_target_date", "")).strip(),
+            data_categories=tuple(
+                str(item).strip()
+                for item in legal_payload.get("data_categories", [])
+            ),
+        )
+
+        legislative_payload = payload.get("legislative_review", {})
+        if not isinstance(legislative_payload, dict):
+            raise ConfigValidationError("'legislative_review' must be an object.")
+        legislative_review = LegislativeReviewSettings(
+            enabled=bool(legislative_payload.get("enabled", False)),
+            provider=str(legislative_payload.get("provider", "openrouter")).strip(),
+            model=str(legislative_payload.get("model", "openai/gpt-5.2:online")).strip(),
+            max_results=int(legislative_payload.get("max_results", 6)),
+            min_citations=int(legislative_payload.get("min_citations", 2)),
+            timeout_seconds=int(legislative_payload.get("timeout_seconds", 60)),
+            trust_profile_file=str(legislative_payload.get("trust_profile_file", "")).strip(),
+            united_kingdom_trust_profile_id=str(
+                legislative_payload.get(
+                    "united_kingdom_trust_profile_id",
+                    "legislation_united_kingdom_primary",
+                )
+            ).strip(),
+            european_union_trust_profile_id=str(
+                legislative_payload.get(
+                    "european_union_trust_profile_id",
+                    "legislation_european_union_primary",
+                )
+            ).strip(),
+            strict=bool(legislative_payload.get("strict", True)),
+            require_human_decision=bool(legislative_payload.get("require_human_decision", True)),
+            decision_file=str(legislative_payload.get("decision_file", "")).strip(),
         )
 
         live_data_payload = payload.get("live_data", {})
@@ -309,6 +451,8 @@ class AgentSpec:
             design_method=str(payload.get("design_method", "deterministic")).strip(),
             profile_id=str(payload.get("profile_id", payload.get("profile", "custom"))).strip(),
             security_requirements=security_requirements,
+            legal_context=legal_context,
+            legislative_review=legislative_review,
             live_data=live_data,
         )
 
@@ -341,6 +485,28 @@ class AgentSpec:
                 "goals": list(self.security_requirements.goals),
                 "threat_actors": list(self.security_requirements.threat_actors),
                 "evidence_requirements": list(self.security_requirements.evidence_requirements),
+            },
+            "legal_context": {
+                "jurisdictions": list(self.legal_context.jurisdictions),
+                "intended_use": self.legal_context.intended_use,
+                "sector": self.legal_context.sector,
+                "decision_impact_level": self.legal_context.decision_impact_level,
+                "compliance_target_date": self.legal_context.compliance_target_date,
+                "data_categories": list(self.legal_context.data_categories),
+            },
+            "legislative_review": {
+                "enabled": self.legislative_review.enabled,
+                "provider": self.legislative_review.provider,
+                "model": self.legislative_review.model,
+                "max_results": self.legislative_review.max_results,
+                "min_citations": self.legislative_review.min_citations,
+                "timeout_seconds": self.legislative_review.timeout_seconds,
+                "trust_profile_file": self.legislative_review.trust_profile_file,
+                "united_kingdom_trust_profile_id": self.legislative_review.united_kingdom_trust_profile_id,
+                "european_union_trust_profile_id": self.legislative_review.european_union_trust_profile_id,
+                "strict": self.legislative_review.strict,
+                "require_human_decision": self.legislative_review.require_human_decision,
+                "decision_file": self.legislative_review.decision_file,
             },
             "live_data": {
                 "enabled": self.live_data.enabled,
@@ -505,6 +671,39 @@ def evaluate_spec_quality(spec: AgentSpec) -> SpecificationQualityReport:
             "High-risk live data should require at least two independent trusted domains."
         )
         score -= 5
+
+    if spec.legislative_review.enabled:
+        if not spec.legal_context.intended_use.strip():
+            missing.append("legal_context.intended_use")
+            findings.append("Legislative review requires an intended_use statement.")
+            score -= 20
+        if not spec.legal_context.jurisdictions:
+            missing.append("legal_context.jurisdictions")
+            findings.append("Legislative review requires jurisdictions.")
+            score -= 15
+        if not spec.legislative_review.united_kingdom_trust_profile_id.strip():
+            missing.append("legislative_review.united_kingdom_trust_profile_id")
+            findings.append("Legislative review requires a United Kingdom trust profile id.")
+            score -= 10
+        if not spec.legislative_review.european_union_trust_profile_id.strip():
+            missing.append("legislative_review.european_union_trust_profile_id")
+            findings.append("Legislative review requires a European Union trust profile id.")
+            score -= 10
+        if spec.risk_level in {"medium", "high"} and not spec.legislative_review.strict:
+            missing.append("legislative_review.strict")
+            findings.append(
+                f"Legislative review strict mode is required for risk level '{spec.risk_level}'."
+            )
+            score -= 10
+        if (
+            spec.risk_level in {"medium", "high"}
+            and not spec.legislative_review.require_human_decision
+        ):
+            missing.append("legislative_review.require_human_decision")
+            findings.append(
+                f"Legislative review requires human decision for risk level '{spec.risk_level}'."
+            )
+            score -= 10
 
     normalized_score = max(0, min(100, score))
     threshold = _QUALITY_THRESHOLD_BY_RISK[spec.risk_level]

@@ -14,7 +14,17 @@ from lifeguard.adapters import (
 from lifeguard.policy_compiler import compile_policy
 from lifeguard.release_workflow import default_release_workflow
 from lifeguard.signing import load_signing_key, verify_payload_signature
-from lifeguard.spec_schema import AgentSpec, DataScope, SecurityRequirements, ToolSpec
+from lifeguard.legislative_review import spec_sha256
+from lifeguard.live_intelligence import Citation, LiveDataReport
+from lifeguard.spec_schema import (
+    AgentSpec,
+    DataScope,
+    LegalContext,
+    LegislativeReviewSettings,
+    LiveDataSettings,
+    SecurityRequirements,
+    ToolSpec,
+)
 from lifeguard.verification_pipeline import CheckResult, VerificationReport
 
 
@@ -124,6 +134,69 @@ class _FakeAdapterLayer:
 
     def run_security_preflight(self, repo_path):
         return self.preflight_error
+
+
+class _FakeIntelligenceClient:
+    def collect_latest(self, query, settings, risk_level="low"):
+        del settings, risk_level
+        query_text = str(query)
+        jurisdiction = "United Kingdom" if "United Kingdom" in query_text else "European Union"
+        domain = "legislation.gov.uk" if jurisdiction == "United Kingdom" else "eur-lex.europa.eu"
+        return LiveDataReport(
+            provider="openrouter",
+            model="openai/gpt-5.2:online",
+            query=query_text,
+            summary=f"{jurisdiction} obligations summary.",
+            citations=(
+                Citation(
+                    url=f"https://{domain}/example",
+                    title=f"{jurisdiction} source",
+                    domain=domain,
+                ),
+                Citation(
+                    url=f"https://{domain}/example2",
+                    title=f"{jurisdiction} source 2",
+                    domain=domain,
+                ),
+            ),
+            fetched_at="2026-02-17T00:00:00+00:00",
+        )
+
+
+def _legislative_spec(command: str) -> AgentSpec:
+    base = _base_spec(command)
+    return AgentSpec(
+        name=base.name,
+        description=base.description,
+        risk_level=base.risk_level,
+        tools=base.tools,
+        data_scope=base.data_scope,
+        runtime_environment=base.runtime_environment,
+        budget_limit_usd=base.budget_limit_usd,
+        max_runtime_seconds=base.max_runtime_seconds,
+        profile_id=base.profile_id,
+        security_requirements=base.security_requirements,
+        legal_context=LegalContext(
+            jurisdictions=("United Kingdom", "European Union"),
+            intended_use="tax administration assistant",
+            sector="administrative",
+            decision_impact_level="medium",
+            compliance_target_date="2026-08-02",
+            data_categories=("personal data",),
+        ),
+        legislative_review=LegislativeReviewSettings(
+            enabled=True,
+            provider="openrouter",
+            model="openai/gpt-5.2:online",
+            max_results=6,
+            min_citations=2,
+            timeout_seconds=60,
+            strict=True,
+            require_human_decision=True,
+            decision_file="",
+        ),
+        live_data=LiveDataSettings(enabled=False),
+    )
 
 
 def test_release_workflow_writes_signed_manifest(tmp_path) -> None:
@@ -578,3 +651,44 @@ def test_release_workflow_allows_when_adversarial_gate_meets_threshold(tmp_path)
     assert report.passed is True
     payload = json.loads((output_dir / "release_manifest.json").read_text(encoding="utf-8"))
     assert payload["adversarial_gate"]["passed"] is True
+
+
+def test_release_workflow_includes_legislative_review_pack_and_decision(tmp_path) -> None:
+    evidence = tmp_path / "events.jsonl"
+    output_dir = tmp_path / "release"
+    signing_key_file = _write_signing_key(tmp_path)
+
+    spec = _legislative_spec("python review.py")
+    decision_path = tmp_path / "legislative_review_decision.json"
+    decision_payload = {
+        "version": 1,
+        "decision": "accept",
+        "reviewed_by": "compliance-reviewer",
+        "review_id": "leg-approval-001",
+        "reviewed_at": "2026-02-17T00:00:00+00:00",
+        "notes": "Reviewed and approved for administrative use.",
+        "spec_name": spec.name,
+        "spec_sha256": spec_sha256(spec),
+        "pack_sha256": "",
+        "jurisdictions": ["United Kingdom", "European Union"],
+    }
+    decision_path.write_text(json.dumps(decision_payload, indent=2) + "\n", encoding="utf-8")
+
+    workflow = default_release_workflow(
+        evidence_path=evidence,
+        adapter_layer=_FakeAdapterLayer(),
+        intelligence_client=_FakeIntelligenceClient(),  # type: ignore[arg-type]
+    )
+    report = workflow.run(
+        spec=spec,
+        output_dir=output_dir,
+        signing_key_file=signing_key_file,
+    )
+    assert report.passed is True
+
+    payload = json.loads((output_dir / "release_manifest.json").read_text(encoding="utf-8"))
+    legislative = payload["legislative_review"]
+    assert legislative["enabled"] is True
+    assert legislative["decision"]["decision"] == "accept"
+    assert isinstance(legislative["pack"], dict)
+    assert legislative["pack"]["spec_name"] == spec.name

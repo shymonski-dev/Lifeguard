@@ -146,6 +146,11 @@ def _find_banned_application_sector(spec: AgentSpec) -> str | None:
     parts = [
         spec.name,
         spec.description,
+        spec.legal_context.intended_use,
+        spec.legal_context.sector,
+        spec.legal_context.compliance_target_date,
+        *spec.legal_context.jurisdictions,
+        *spec.legal_context.data_categories,
         *spec.security_requirements.goals,
         *spec.security_requirements.threat_actors,
         *spec.security_requirements.evidence_requirements,

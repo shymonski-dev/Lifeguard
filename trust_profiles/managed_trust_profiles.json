@@ -123,6 +123,88 @@
       "freshness_days_official_docs": 365,
       "freshness_days_security_advisory": 120,
       "freshness_days_general": 90
+    },
+    {
+      "profile_id": "legislation_united_kingdom_primary",
+      "display_name": "Legislation United Kingdom Primary",
+      "description": "Managed trust policy for United Kingdom legislation and regulators.",
+      "policy_version": "2026-02-17",
+      "approved_by": "lifeguard-security-council",
+      "approval_id": "trust-approval-004",
+      "approved_at": "2026-02-17T00:00:00+00:00",
+      "high_trust_domains": [
+        "legislation.gov.uk",
+        "ico.org.uk",
+        "gov.uk",
+        "parliament.uk"
+      ],
+      "medium_trust_domains": [
+        "assets.publishing.service.gov.uk"
+      ],
+      "allowed_domains": [
+        "legislation.gov.uk",
+        "ico.org.uk",
+        "gov.uk",
+        "parliament.uk",
+        "assets.publishing.service.gov.uk"
+      ],
+      "min_trusted_citations_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "min_independent_trusted_domains_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "enforce_freshness": true,
+      "require_publication_dates": false,
+      "freshness_days_news": 90,
+      "freshness_days_official_docs": 3650,
+      "freshness_days_security_advisory": 3650,
+      "freshness_days_general": 365
+    },
+    {
+      "profile_id": "legislation_european_union_primary",
+      "display_name": "Legislation European Union Primary",
+      "description": "Managed trust policy for European Union legislation and regulators.",
+      "policy_version": "2026-02-17",
+      "approved_by": "lifeguard-security-council",
+      "approval_id": "trust-approval-005",
+      "approved_at": "2026-02-17T00:00:00+00:00",
+      "high_trust_domains": [
+        "eur-lex.europa.eu",
+        "edpb.europa.eu",
+        "ec.europa.eu",
+        "europarl.europa.eu"
+      ],
+      "medium_trust_domains": [
+        "europa.eu"
+      ],
+      "allowed_domains": [
+        "eur-lex.europa.eu",
+        "edpb.europa.eu",
+        "ec.europa.eu",
+        "europarl.europa.eu",
+        "europa.eu"
+      ],
+      "min_trusted_citations_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "min_independent_trusted_domains_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "enforce_freshness": true,
+      "require_publication_dates": false,
+      "freshness_days_news": 90,
+      "freshness_days_official_docs": 3650,
+      "freshness_days_security_advisory": 3650,
+      "freshness_days_general": 365
     }
   ]
 }
