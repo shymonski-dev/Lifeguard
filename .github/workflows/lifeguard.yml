@@ -72,3 +72,50 @@ jobs:
           assert payload["signature"]["verified"] is True
           assert payload["verification"]["passed"] is True
           PY
+
+      - name: Create Sigstore badge file
+        run: |
+          python - <<'PY'
+          import json
+          from pathlib import Path
+
+          release_dir = Path("/tmp/lifeguard_release_output")
+          payload = json.loads((release_dir / "release_manifest.json").read_text(encoding="utf-8"))
+          signature = payload.get("signature", {})
+          verified = (
+              isinstance(signature, dict)
+              and signature.get("algorithm") == "sigstore-bundle"
+              and bool(signature.get("verified"))
+          )
+          badge = {
+              "generated_by": "github-workflow",
+              "label": "Sigstore",
+              "message": "verified" if verified else "failed",
+              "color": "brightgreen" if verified else "red",
+              "passed": bool(verified),
+          }
+          (release_dir / "sigstore_badge.json").write_text(
+              json.dumps(badge, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Upload release artifacts and badges
+        uses: actions/upload-artifact@v4
+        with:
+          name: lifeguard-sigstore-release-artifacts
+          if-no-files-found: error
+          path: |
+            /tmp/lifeguard_release_output/release_manifest.json
+            /tmp/lifeguard_release_output/release_anchor.json
+            /tmp/lifeguard_release_output/owasp_control_badge.json
+            /tmp/lifeguard_release_output/sigstore_badge.json
+            /tmp/lifeguard_release_output/**/*.sigstore.bundle.json
+
+      - name: Publish badge summary
+        run: |
+          {
+            echo "### Release badge artifacts"
+            echo "- Sigstore badge: \`sigstore_badge.json\`"
+            echo "- Security control matrix badge: \`owasp_control_badge.json\`"
+          } >> "$GITHUB_STEP_SUMMARY"
