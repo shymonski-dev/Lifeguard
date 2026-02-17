@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "profiles": [
+    {
+      "profile_id": "secure_code_review_primary",
+      "display_name": "Secure Code Review Primary",
+      "description": "Primary trust policy for secure code review with strong corroboration.",
+      "policy_version": "2026-02-14",
+      "approved_by": "lifeguard-security-council",
+      "approval_id": "trust-approval-001",
+      "approved_at": "2026-02-14T00:00:00+00:00",
+      "high_trust_domains": [
+        "openai.com",
+        "docs.anthropic.com",
+        "owasp.org"
+      ],
+      "medium_trust_domains": [
+        "openrouter.ai",
+        "github.com"
+      ],
+      "allowed_domains": [
+        "openai.com",
+        "docs.anthropic.com",
+        "owasp.org",
+        "openrouter.ai",
+        "github.com"
+      ],
+      "min_trusted_citations_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "min_independent_trusted_domains_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "enforce_freshness": true,
+      "require_publication_dates": false,
+      "freshness_days_news": 45,
+      "freshness_days_official_docs": 365,
+      "freshness_days_security_advisory": 180,
+      "freshness_days_general": 120
+    },
+    {
+      "profile_id": "dependency_security_primary",
+      "display_name": "Dependency Security Primary",
+      "description": "Managed trust policy for dependency and supply chain guidance.",
+      "policy_version": "2026-02-14",
+      "approved_by": "lifeguard-security-council",
+      "approval_id": "trust-approval-002",
+      "approved_at": "2026-02-14T00:00:00+00:00",
+      "high_trust_domains": [
+        "osv.dev",
+        "nvd.nist.gov",
+        "cve.mitre.org"
+      ],
+      "medium_trust_domains": [
+        "github.com",
+        "pypi.org"
+      ],
+      "allowed_domains": [
+        "osv.dev",
+        "nvd.nist.gov",
+        "cve.mitre.org",
+        "github.com",
+        "pypi.org"
+      ],
+      "min_trusted_citations_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "min_independent_trusted_domains_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "enforce_freshness": true,
+      "require_publication_dates": false,
+      "freshness_days_news": 30,
+      "freshness_days_official_docs": 365,
+      "freshness_days_security_advisory": 180,
+      "freshness_days_general": 90
+    },
+    {
+      "profile_id": "runtime_incident_response_primary",
+      "display_name": "Runtime Incident Response Primary",
+      "description": "Managed trust policy for runtime threat hunting and incident response.",
+      "policy_version": "2026-02-14",
+      "approved_by": "lifeguard-security-council",
+      "approval_id": "trust-approval-003",
+      "approved_at": "2026-02-14T00:00:00+00:00",
+      "high_trust_domains": [
+        "nvd.nist.gov",
+        "cisa.gov",
+        "otx.alienvault.com"
+      ],
+      "medium_trust_domains": [
+        "abuseipdb.com",
+        "github.com"
+      ],
+      "allowed_domains": [
+        "nvd.nist.gov",
+        "cisa.gov",
+        "otx.alienvault.com",
+        "abuseipdb.com",
+        "github.com"
+      ],
+      "min_trusted_citations_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "min_independent_trusted_domains_by_risk": {
+        "low": 1,
+        "medium": 2,
+        "high": 2
+      },
+      "enforce_freshness": true,
+      "require_publication_dates": false,
+      "freshness_days_news": 30,
+      "freshness_days_official_docs": 365,
+      "freshness_days_security_advisory": 120,
+      "freshness_days_general": 90
+    }
+  ]
+}

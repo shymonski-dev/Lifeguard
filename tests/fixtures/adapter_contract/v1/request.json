@@ -1,0 +1,29 @@
+{
+  "action_name": "json.parse",
+  "payload": {
+    "content": "{\"ok\": true}"
+  },
+  "contract_version": "1.0.0",
+  "request_id": "fixture-req-001",
+  "tool_name": "json_parser",
+  "trust": {
+    "risk_level": "medium",
+    "trust_profile_id": "secure_code_review_primary",
+    "allowed_domains": [
+      "openrouter.ai"
+    ],
+    "high_trust_domains": [
+      "owasp.org"
+    ],
+    "medium_trust_domains": [
+      "github.com"
+    ],
+    "min_trusted_citations": 1,
+    "min_independent_trusted_domains": 1,
+    "enforce_freshness": true,
+    "require_publication_dates": false
+  },
+  "context": {
+    "source": "fixture"
+  }
+}

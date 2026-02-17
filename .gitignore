@@ -1,0 +1,14 @@
+# Local environments
+.venv*/
+.sigstore_home/
+.sigstore_cache/
+
+# Local build output
+wheelhouse/
+validation/
+
+# Local caches
+__pycache__/
+.pytest_cache/
+.DS_Store
+.claude/
