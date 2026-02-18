@@ -4,7 +4,7 @@
 
 Lifeguard verifies that tool-using AI agents meet security, policy, and compliance requirements before they are released. It produces tamper-evident evidence logs, runs adversarial validation, and optionally gates releases on legislative review with a human decision record.
 
-**Zero runtime dependencies.** Pure Python. Deny by default.
+**Core has no third party Python dependencies.** Some features rely on external tools such as Docker and Sigstore. Pure Python. Deny by default.
 
 ## Install
 

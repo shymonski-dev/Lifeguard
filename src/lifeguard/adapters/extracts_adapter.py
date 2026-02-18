@@ -35,8 +35,6 @@ _SELECTED_MODULES: dict[str, str] = {
 
 _FORBIDDEN_TERMS = (
     "evolution",
-    "darwin",
-    "godel",
     "mutation",
     "population",
     "genetic",
