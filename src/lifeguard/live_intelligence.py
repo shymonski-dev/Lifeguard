@@ -178,13 +178,8 @@ class LiveIntelligenceClient:
             attempt_query = cleaned_query
             attempt_settings = resolved_settings
             query_variant = "base"
-            if attempt == 1 and previous_citation_count == 0:
-                query_variant = "trusted_domain_constrained"
-                attempt_query = _trusted_domain_constrained_query(
-                    cleaned_query=cleaned_query,
-                    settings=resolved_settings,
-                )
-            elif attempt >= 2 and previous_citation_count == 0:
+            is_last_attempt = attempt == (max_attempts - 1) and attempt > 0
+            if is_last_attempt:
                 query_variant = "trusted_domain_constrained_fallback_model"
                 attempt_query = _trusted_domain_constrained_query(
                     cleaned_query=cleaned_query,
@@ -194,6 +189,12 @@ class LiveIntelligenceClient:
                 fallback_model = _resolve_fallback_model(resolved_settings)
                 if fallback_model:
                     attempt_settings = replace(attempt_settings, model=fallback_model)
+            elif attempt == 1 and previous_citation_count == 0:
+                query_variant = "trusted_domain_constrained"
+                attempt_query = _trusted_domain_constrained_query(
+                    cleaned_query=cleaned_query,
+                    settings=resolved_settings,
+                )
             elif attempt:
                 query_variant = "quality_retry"
                 attempt_query = _quality_retry_query(
@@ -535,6 +536,7 @@ def _format_live_intelligence_prompt(
             "- Use citations from trusted sources across independent domains. "
             f"Required independent trusted domains: {required_independent_domains}."
         ),
+        "- Do not repeat a citation domain until you meet the independent domain requirement.",
     ]
     if trusted_domains:
         lines.append("- Prioritize these trusted domains: " + ", ".join(trusted_domains))
@@ -547,11 +549,13 @@ def _format_live_intelligence_prompt(
 
 
 def _quality_retry_query(*, cleaned_query: str, settings: LiveDataSettings) -> str:
+    required_domains = max(1, int(settings.min_independent_trusted_domains))
     return (
         cleaned_query
         + "\n\nIMPORTANT: Include a 'Citations:' section with at least "
         f"{settings.min_citations} unique full https:// URLs, one per line."
-        + "\nIMPORTANT: Use multiple independent trusted domains in your citations."
+        + "\nIMPORTANT: Use citations from at least "
+        f"{required_domains} independent trusted domains. Do not repeat a domain until you meet this."
         + "\nIMPORTANT: Prioritize recent sources that satisfy freshness windows."
     )
 
@@ -562,6 +566,7 @@ def _trusted_domain_constrained_query(
     settings: LiveDataSettings,
     strict_wording: bool = False,
 ) -> str:
+    required_domains = max(1, int(settings.min_independent_trusted_domains))
     trusted_domains = tuple(
         dict.fromkeys(
             [*settings.high_trust_domains, *settings.medium_trust_domains]
@@ -579,7 +584,10 @@ def _trusted_domain_constrained_query(
         + "\n"
         + f"{emphasis}: Constrain sources to trusted domains only: {trusted_line}."
         + "\n"
-        + f"{emphasis}: Use multiple independent trusted domains and recent publications."
+        + f"{emphasis}: Use at least {required_domains} independent trusted domains. "
+        + "Do not repeat a domain until you meet this requirement."
+        + "\n"
+        + f"{emphasis}: Prioritize recent publications that satisfy freshness windows."
     )
 
 
