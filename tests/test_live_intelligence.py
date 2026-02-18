@@ -636,6 +636,117 @@ def test_live_intelligence_failure_includes_attempt_metadata(monkeypatch) -> Non
     assert attempts[2].model == "gpt-4.1-mini"
 
 
+def test_live_intelligence_domain_diversity_topup_recovers_last_attempt(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setenv("LIFEGUARD_LIVE_DATA_MAX_ATTEMPTS", "3")
+
+    calls: list[dict[str, object]] = []
+
+    def fake_transport(url, headers, payload, timeout):
+        assert isinstance(payload, dict)
+        calls.append(
+            {
+                "model": payload.get("model"),
+                "input": payload.get("input"),
+            }
+        )
+
+        if len(calls) < 3:
+            return {
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [{"type": "output_text", "text": "No citations returned."}],
+                    }
+                ]
+            }
+
+        if len(calls) == 3:
+            return {
+                "output": [
+                    {
+                        "type": "message",
+                        "content": [
+                            {
+                                "type": "output_text",
+                                "text": "Citations from one trusted domain only.",
+                                "annotations": [
+                                    {
+                                        "type": "url_citation",
+                                        "url": "https://openai.com/research/post-one",
+                                        "title": "Post one",
+                                        "published_at": "2026-02-13T00:00:00+00:00",
+                                    },
+                                    {
+                                        "type": "url_citation",
+                                        "url": "https://openai.com/research/post-two",
+                                        "title": "Post two",
+                                        "published_at": "2026-02-12T00:00:00+00:00",
+                                    },
+                                ],
+                            }
+                        ],
+                    }
+                ]
+            }
+
+        return {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": "Top-up citation from a second domain.",
+                            "annotations": [
+                                {
+                                    "type": "url_citation",
+                                    "url": "https://docs.anthropic.com/en/docs/build-with-claude/web-search",
+                                    "title": "Anthropic docs",
+                                    "published_at": "2026-02-13T00:00:00+00:00",
+                                }
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+
+    settings = LiveDataSettings(
+        enabled=True,
+        provider="openai",
+        model="gpt-5",
+        max_results=6,
+        min_citations=2,
+        min_trusted_citations=2,
+        min_independent_trusted_domains=2,
+        allowed_domains=("openai.com", "docs.anthropic.com"),
+        high_trust_domains=("openai.com", "docs.anthropic.com"),
+        timeout_seconds=15,
+        strict=True,
+    )
+    client = LiveIntelligenceClient(
+        transport=fake_transport,
+        clock=lambda: datetime(2026, 2, 14, 20, 0, tzinfo=timezone.utc),
+    )
+    report = client.collect_latest(
+        "latest secure design checks",
+        settings,
+        risk_level="high",
+    )
+
+    assert len(calls) == 4
+    domains = {item.domain for item in report.citations}
+    assert "openai.com" in domains
+    assert "docs.anthropic.com" in domains
+    assert report.assessment.passed is True
+
+    topup_payload = calls[-1]["input"]
+    assert isinstance(topup_payload, str)
+    assert "Only cite sources from these domains" in topup_payload
+    assert "docs.anthropic.com" in topup_payload
+
+
 def test_live_intelligence_rejects_stale_citations_in_strict_mode(monkeypatch) -> None:
     monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
 

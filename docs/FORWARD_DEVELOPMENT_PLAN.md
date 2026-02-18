@@ -1,8 +1,23 @@
 # Lifeguard Forward Development Plan
 
-Status date: `2026-02-17`
+Status date: `2026-02-18`
 
 This plan focuses on shipping a compliance-producing release flow for security-focused agents used in administrative and tax work. Military and healthcare use cases remain out of scope and are blocked by specification checks.
+
+## Current baseline (as of 2026-02-18)
+
+Shipped:
+1. Compliance pack release artifact and local verification command.
+2. Legislative review gate with required human decision record (when enabled).
+3. Hardened container sandbox default image plus outbound allow list gateway enforcement.
+4. Sigstore bundle signing mode in supported environments, and key-based signing for offline use.
+5. Compatibility adapters for LangChain, LangGraph, and Model Context Protocol with deny-by-default gating.
+6. Verification dashboard generator for validation runs.
+
+Known gaps:
+1. The legislative review pack is decision support and does not attempt to enumerate all obligations and effective dates.
+2. The live intelligence module remains large and should be split for maintainability.
+3. Outbound network controls need deeper integration testing against real network behavior.
 
 ## Guiding rules
 
@@ -12,18 +27,12 @@ This plan focuses on shipping a compliance-producing release flow for security-f
 4. Legislative review is decision support, not automated legal advice. Release requires an explicit human decision record when the gate is enabled.
 5. Default to fail closed on integration and policy enforcement.
 
-## Milestone 1: Compliance-producing release pack
+## Milestone 1: Compliance-producing release pack (shipped)
 
 Goal: Every release emits a single directory that a reviewer can audit without running code.
 
-Work:
-1. Add a release “compliance pack” artifact that bundles:
-   - specification snapshot and hash
-   - evidence log and hash-chain verification summary
-   - trust profile identifiers and versions used by live intelligence and legislative review
-   - control matrix summary and badge artifact
-   - signing and attestation metadata
-2. Add a command to validate a release pack locally, including signature and evidence integrity checks.
+Status:
+1. Shipped and revalidated in `validation/compliance_pack_e2e_20260218_full_run2`.
 
 Validation:
 1. Unit tests for pack creation and pack validation.
@@ -141,4 +150,3 @@ Validation:
 
 Exit criteria:
 1. A reviewer can identify why a release is blocked within one page view.
-

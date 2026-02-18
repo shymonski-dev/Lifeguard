@@ -13,11 +13,14 @@ Latest workflow validation record:
 
 ## Project status
 
-Status date: `2026-02-17`
+Status date: `2026-02-18`
 
 1. Completion gate: passed.
-2. Full validation run one: `validation/hardening_run_20260217_full_confidence_fix2_run1`
-3. Full validation run two: `validation/hardening_run_20260217_full_confidence_fix2_run2`
+2. Latest full validation run: `validation/compliance_pack_e2e_20260218_full_run2`
+3. Stage one confidence runs:
+   - `validation/compliance_pack_e2e_20260218_stage1_run2`
+   - `validation/compliance_pack_e2e_20260218_stage1_run4`
+   - `validation/compliance_pack_e2e_20260218_stage1_run5`
 4. Completion declaration: `validation/COMPLETION_DECLARATION.md`
 
 ## What this project does

@@ -4,7 +4,9 @@ This runbook documents local operator commands for deployment checks and runtime
 
 Completion note:
 1. Completion declaration file: `validation/COMPLETION_DECLARATION.md`
-2. Completion date: `2026-02-17`
+2. Completion declaration date: `2026-02-17`
+3. Latest revalidation date: `2026-02-18`
+4. Latest full revalidation run: `validation/compliance_pack_e2e_20260218_full_run2`
 
 Continuous integration note:
 1. The signed release workflow is `.github/workflows/lifeguard.yml`.
@@ -123,9 +125,9 @@ Writes stage output under `validation/`.
 ```bash
 python3 scripts/run_completion_validation.py --stage stage-0
 python3 scripts/run_completion_validation.py --stage stage-1
-python3 scripts/run_completion_validation.py --stage all --validation-root validation/hardening_run_20260217_full_confidence_fix2_run1
-python3 scripts/run_completion_validation.py --stage all --validation-root validation/hardening_run_20260217_full_confidence_fix2_run2
-python3 scripts/run_completion_validation.py --stage all --validation-root validation/legislative_review_20260217_full_escalated
+
+# Example full run. Pick a new validation root per run.
+python3 scripts/run_completion_validation.py --stage all --validation-root validation/compliance_pack_e2e_YYYYMMDD_full_run1
 ```
 
 ## 15. Completion Record Review

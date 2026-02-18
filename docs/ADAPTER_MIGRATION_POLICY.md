@@ -6,13 +6,14 @@ This policy freezes the adapter contract for stable integrations and defines mig
 
 ## Validation Record
 
-Record date: `2026-02-17`
+Record date: `2026-02-18`
 
 1. Full completion run one: `validation/hardening_run_20260217_full_confidence_fix2_run1`
 2. Full completion run two: `validation/hardening_run_20260217_full_confidence_fix2_run2`
-3. Additional revalidation run: `validation/legislative_review_20260217_full_escalated`
-4. Stage six signoff exists in both completion runs.
-5. Completion declaration: `validation/COMPLETION_DECLARATION.md`
+3. Revalidation run one: `validation/legislative_review_20260217_full_escalated`
+4. Revalidation run two: `validation/compliance_pack_e2e_20260218_full_run2`
+5. Stage six signoff exists in completion and revalidation runs.
+6. Completion declaration: `validation/COMPLETION_DECLARATION.md`
 
 ## Contract Stability Rules
 
