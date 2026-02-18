@@ -351,7 +351,7 @@ def test_live_intelligence_retries_when_trust_assessment_fails(monkeypatch) -> N
     assert isinstance(second_payload, dict)
     second_input = second_payload["input"]
     assert isinstance(second_input, str)
-    assert "multiple independent trusted domains" in second_input
+    assert "independent trusted domains" in second_input
 
 
 def test_live_intelligence_prompt_demands_independent_trusted_domains(monkeypatch) -> None:
@@ -493,6 +493,110 @@ def test_live_intelligence_uses_third_attempt_fallback_model_after_zero_citation
     assert report.attempts[1].query_variant == "trusted_domain_constrained"
     assert report.attempts[2].query_variant == "trusted_domain_constrained_fallback_model"
     assert report.attempts[2].citation_count == 2
+
+
+def test_live_intelligence_uses_fallback_model_after_trust_assessment_failures(monkeypatch) -> None:
+    monkeypatch.setenv("OPENAI_API_KEY", "test-openai-key")
+    monkeypatch.setenv("LIFEGUARD_LIVE_DATA_MAX_ATTEMPTS", "3")
+    monkeypatch.setenv("LIFEGUARD_LIVE_DATA_FALLBACK_MODEL", "gpt-4.1-mini")
+    calls: list[dict[str, object]] = []
+
+    def fake_transport(url, headers, payload, timeout):
+        assert isinstance(payload, dict)
+        calls.append(
+            {
+                "model": payload.get("model"),
+                "input": payload.get("input"),
+            }
+        )
+
+        failing_payload = {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": "Only one trusted domain.",
+                            "annotations": [
+                                {
+                                    "type": "url_citation",
+                                    "url": "https://openai.com/research/post-one",
+                                    "title": "Post one",
+                                    "published_at": "2026-02-13T00:00:00+00:00",
+                                },
+                                {
+                                    "type": "url_citation",
+                                    "url": "https://openai.com/research/post-two",
+                                    "title": "Post two",
+                                    "published_at": "2026-02-12T00:00:00+00:00",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+
+        if len(calls) < 3:
+            return failing_payload
+
+        if payload.get("model") != "gpt-4.1-mini":
+            return failing_payload
+
+        return {
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": "Recovered with multiple trusted domains.",
+                            "annotations": [
+                                {
+                                    "type": "url_citation",
+                                    "url": "https://openai.com/research/post-three",
+                                    "title": "Post three",
+                                    "published_at": "2026-02-13T00:00:00+00:00",
+                                },
+                                {
+                                    "type": "url_citation",
+                                    "url": "https://docs.anthropic.com/en/docs/build-with-claude/web-search",
+                                    "title": "Anthropic docs",
+                                    "published_at": "2026-02-13T00:00:00+00:00",
+                                },
+                            ],
+                        }
+                    ],
+                }
+            ]
+        }
+
+    settings = LiveDataSettings(
+        enabled=True,
+        provider="openai",
+        model="gpt-5",
+        max_results=4,
+        min_citations=2,
+        min_trusted_citations=2,
+        min_independent_trusted_domains=2,
+        high_trust_domains=("openai.com", "docs.anthropic.com"),
+        timeout_seconds=15,
+        strict=True,
+    )
+    client = LiveIntelligenceClient(
+        transport=fake_transport,
+        clock=lambda: datetime(2026, 2, 14, 20, 0, tzinfo=timezone.utc),
+    )
+    report = client.collect_latest("latest secure design checks", settings, risk_level="high")
+
+    assert len(calls) == 3
+    assert calls[2]["model"] == "gpt-4.1-mini"
+    assert len(report.attempts) == 3
+    assert report.attempts[0].query_variant == "base"
+    assert report.attempts[1].query_variant == "quality_retry"
+    assert report.attempts[2].query_variant == "trusted_domain_constrained_fallback_model"
+    assert report.assessment.passed is True
 
 
 def test_live_intelligence_failure_includes_attempt_metadata(monkeypatch) -> None:
