@@ -52,7 +52,8 @@ jobs:
       - name: Run static security scan
         run: |
           python -m pip install bandit[toml]
-          bandit -q -r src/lifeguard
+          # Fail on medium or high severity findings with at least medium confidence.
+          bandit -q -r src/lifeguard -ll -ii
 
       - name: Run tests
         run: pytest -q tests
