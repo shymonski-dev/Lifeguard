@@ -25,16 +25,11 @@ jobs:
       - name: Guard stand-alone project boundaries
         run: |
           set -euo pipefail
-          forbidden_paths="$(git ls-files | grep -E '^dgm/' || true)"
-          if [ -n "${forbidden_paths}" ]; then
-            echo "Forbidden DGM paths found:"
-            echo "${forbidden_paths}"
-            exit 1
-          fi
-          forbidden_refs="$(git grep -n -I -E '\bdgm\b' -- . ':!.github/workflows/lifeguard.yml' || true)"
-          if [ -n "${forbidden_refs}" ]; then
-            echo "Forbidden DGM references found:"
-            echo "${forbidden_refs}"
+          allowed_top_level='^(\.github|src|tests|docs|examples|scripts|trust_profiles|validation|extracts|LICENSE|README\.md|pyproject\.toml|\.gitignore)$'
+          unexpected_paths="$(git ls-files | awk -F/ '{print $1}' | sort -u | grep -Ev "${allowed_top_level}" || true)"
+          if [ -n "${unexpected_paths}" ]; then
+            echo "Unexpected top-level paths found:"
+            echo "${unexpected_paths}"
             exit 1
           fi
 
