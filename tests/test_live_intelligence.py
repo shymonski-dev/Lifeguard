@@ -10,6 +10,7 @@ from lifeguard.live_intelligence import (
     LiveDataConfigurationError,
     LiveDataValidationError,
     LiveIntelligenceClient,
+    _default_transport,
 )
 from lifeguard.spec_schema import LiveDataSettings
 
@@ -1007,3 +1008,45 @@ def test_live_intelligence_capture_blocks_paths_outside_capture_root(tmp_path, m
     client.collect_latest("latest secure design checks", settings)
 
     assert not Path(tmp_path).parent.joinpath("outside.json").exists()
+
+
+def test_default_transport_rejects_non_http_or_https_url() -> None:
+    with pytest.raises(LiveDataConfigurationError):
+        _default_transport(
+            "ftp://example.com/api",
+            {},
+            {"test": "payload"},
+            5,
+        )
+
+
+def test_default_transport_allows_local_http_url(monkeypatch) -> None:
+    captured: dict[str, object] = {}
+
+    class _FakeResponse:
+        def __enter__(self) -> "_FakeResponse":
+            return self
+
+        def __exit__(self, exc_type, exc, tb) -> None:
+            return None
+
+        def read(self) -> bytes:
+            return b'{"ok": true}'
+
+    def fake_urlopen(http_request, timeout):
+        captured["url"] = http_request.full_url
+        captured["timeout"] = timeout
+        return _FakeResponse()
+
+    monkeypatch.setattr("lifeguard.live_intelligence.request.urlopen", fake_urlopen)
+
+    response = _default_transport(
+        "http://localhost:8080/api",
+        {"Authorization": "Bearer test"},
+        {"test": "payload"},
+        11,
+    )
+
+    assert response == {"ok": True}
+    assert captured["url"] == "http://localhost:8080/api"
+    assert captured["timeout"] == 11

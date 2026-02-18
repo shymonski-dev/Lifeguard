@@ -106,6 +106,9 @@ _GATEWAY_PROXY_PORT = 3128
 _CONTROL_COMMAND_TIMEOUT_SECONDS = 30
 _UNHARDENED_IMAGE_OVERRIDE_ACK_ENV = "LIFEGUARD_ALLOW_UNHARDENED_IMAGE_ACK"
 _UNHARDENED_IMAGE_OVERRIDE_ACK_VALUE = "I_UNDERSTAND_UNHARDENED_IMAGE_RISK"
+_CONTAINER_TMP_DIR = PurePosixPath("/").joinpath("tmp").as_posix()
+_GATEWAY_TMPFS_MOUNT = f"{_CONTAINER_TMP_DIR}:rw,noexec,nosuid,size=16m"
+_TOOL_TMPFS_MOUNT = f"{_CONTAINER_TMP_DIR}:rw,noexec,nosuid,size=64m"
 
 
 class DockerSandboxExecutor:
@@ -255,7 +258,7 @@ class DockerSandboxExecutor:
                     "--user",
                     "65532:65532",
                     "--tmpfs",
-                    "/tmp:rw,noexec,nosuid,size=16m",
+                    _GATEWAY_TMPFS_MOUNT,
                     "--entrypoint",
                     "python",
                     "-v",
@@ -360,7 +363,7 @@ class DockerSandboxExecutor:
             "--network",
             network_name,
             "--tmpfs",
-            "/tmp:rw,noexec,nosuid,size=64m",
+            _TOOL_TMPFS_MOUNT,
             "--entrypoint",
             "/bin/sh",
             *mounts,

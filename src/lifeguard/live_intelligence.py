@@ -675,12 +675,13 @@ def _default_transport(
     payload: dict[str, Any],
     timeout_seconds: int,
 ) -> dict[str, Any]:
+    _validate_transport_url(url)
     body = json.dumps(payload).encode("utf-8")
     merged_headers = {"Content-Type": "application/json", **headers}
     http_request = request.Request(url, data=body, headers=merged_headers, method="POST")
 
     try:
-        with request.urlopen(http_request, timeout=timeout_seconds) as response:
+        with request.urlopen(http_request, timeout=timeout_seconds) as response:  # nosec B310
             response_body = response.read().decode("utf-8")
     except error.HTTPError as exc:
         error_body = exc.read().decode("utf-8", errors="replace")
@@ -699,6 +700,20 @@ def _default_transport(
     if not isinstance(parsed_payload, dict):
         raise LiveDataProviderError("Live intelligence response root must be a JSON object.")
     return parsed_payload
+
+
+def _validate_transport_url(url: str) -> None:
+    parsed_url = parse.urlparse(url)
+    scheme = parsed_url.scheme.lower().strip()
+    hostname = (parsed_url.hostname or "").lower().strip()
+
+    if scheme == "https":
+        return
+    if scheme == "http" and hostname in {"localhost", "127.0.0.1", "::1"}:
+        return
+    raise LiveDataConfigurationError(
+        "Live intelligence transport URL must use https, or use http only for localhost."
+    )
 
 
 def _format_live_intelligence_prompt(
