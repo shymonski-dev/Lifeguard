@@ -4,6 +4,8 @@
 
 `spec_local.json` is a pre-built agent specification using the `secure_code_review_local` profile. It runs without live intelligence or API keys.
 
+Note: verification does not execute tool commands. The example spec includes `examples/write_report.py` so the declared write tool is runnable if you want to try it.
+
 ### Generate the spec yourself
 
 ```bash

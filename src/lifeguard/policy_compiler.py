@@ -8,8 +8,6 @@ from .spec_schema import AgentSpec, ConfigValidationError
 _BANNED_EVOLUTION_TERMS = (
     "evolution",
     "evolve",
-    "darwin",
-    "godel",
     "genetic",
     "mutation",
     "population",

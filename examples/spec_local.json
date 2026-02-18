@@ -12,7 +12,7 @@
     },
     {
       "name": "write_report",
-      "command": "python write_report.py",
+      "command": "python examples/write_report.py",
       "can_write_files": true,
       "can_access_network": false,
       "timeout_seconds": 60
