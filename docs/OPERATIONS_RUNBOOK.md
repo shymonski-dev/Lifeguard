@@ -16,7 +16,7 @@ Continuous integration note:
 
 ```bash
 cd lifeguard
-export PYTHONPATH=src
+pip install -e .
 ```
 
 Optional provider key note:
