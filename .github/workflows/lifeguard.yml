@@ -9,7 +9,6 @@ on:
 
 permissions:
   contents: read
-  id-token: write
 
 jobs:
   lifeguard-tests:
@@ -23,18 +22,61 @@ jobs:
         with:
           python-version: "3.11"
 
+      - name: Guard stand-alone project boundaries
+        run: |
+          set -euo pipefail
+          forbidden_paths="$(git ls-files | grep -E '^dgm/' || true)"
+          if [ -n "${forbidden_paths}" ]; then
+            echo "Forbidden DGM paths found:"
+            echo "${forbidden_paths}"
+            exit 1
+          fi
+          forbidden_refs="$(git grep -n -I -E '\bdgm\b' -- . ':!.github/workflows/lifeguard.yml' || true)"
+          if [ -n "${forbidden_refs}" ]; then
+            echo "Forbidden DGM references found:"
+            echo "${forbidden_refs}"
+            exit 1
+          fi
+
       - name: Install Lifeguard and Sigstore
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e ".[dev]"
           python -m pip install sigstore
 
+      - name: Run secret scan
+        uses: gitleaks/gitleaks-action@v2
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Run static security scan
+        run: |
+          python -m pip install bandit[toml]
+          bandit -q -r src/lifeguard
+
       - name: Run tests
         run: pytest -q tests
 
+  dependency-review:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Dependency review
+        uses: actions/dependency-review-action@v4
+
   lifeguard-sigstore-release:
+    if: github.event_name != 'pull_request'
     needs: lifeguard-tests
     runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -72,6 +114,24 @@ jobs:
           assert payload["signature"]["verified"] is True
           assert payload["verification"]["passed"] is True
           PY
+
+      - name: Verify Sigstore compliance pack
+        run: |
+          lifeguard compliance-pack-verify --pack /tmp/lifeguard_release_output/compliance_pack
+
+      - name: Run key-based release and verify compliance pack
+        run: |
+          printf "lifeguard-ci-signing-key-material-123456789" > /tmp/lifeguard_ci_signing.key
+          lifeguard release \
+            --spec /tmp/lifeguard_spec.json \
+            --evidence /tmp/lifeguard_evidence_hmac.jsonl \
+            --output /tmp/lifeguard_release_output_hmac \
+            --signing-mode hmac \
+            --signing-key-file /tmp/lifeguard_ci_signing.key
+          test -f /tmp/lifeguard_release_output_hmac/release_manifest.json
+          lifeguard compliance-pack-verify \
+            --pack /tmp/lifeguard_release_output_hmac/compliance_pack \
+            --signing-key-file /tmp/lifeguard_ci_signing.key
 
       - name: Create Sigstore badge file
         run: |
