@@ -17,6 +17,7 @@ def test_sigstore_sign_and_verify_bundle(tmp_path) -> None:
     artifact = tmp_path / "payload.json"
     artifact.write_text("{\"name\":\"lifeguard\"}\n", encoding="utf-8")
     bundle = tmp_path / "payload.sigstore.json"
+    workflow_fixture = "tests/fixtures/sigstore_workflow.yml"
 
     def _runner(command: list[str]) -> subprocess.CompletedProcess[str]:
         if command[:3] == ["sigstore", "sign", "--bundle"]:
@@ -44,13 +45,13 @@ def test_sigstore_sign_and_verify_bundle(tmp_path) -> None:
         artifact_path=artifact,
         bundle_path=bundle,
         repository="acme/lifeguard",
-        workflow=".github/workflows/release.yml",
+        workflow=workflow_fixture,
         command_runner=_runner,
     )
     assert report.bundle_path == bundle
     assert len(report.bundle_sha256) == 64
     assert report.identity_policy.repository == "acme/lifeguard"
-    assert report.identity_policy.workflow == ".github/workflows/release.yml"
+    assert report.identity_policy.workflow == workflow_fixture
     assert report.identity_policy.workflow_name == "release"
     assert report.transparency_log_entries[0]["log_index"] == 7
 

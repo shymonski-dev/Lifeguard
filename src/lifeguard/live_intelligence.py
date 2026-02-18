@@ -295,6 +295,200 @@ class LiveIntelligenceClient:
                 assessment = replace(assessment, managed_profile=managed_resolution.to_dict())
             if not assessment.passed:
                 failure = "; ".join(assessment.failures)
+                corroboration_only = (
+                    assessment.failures
+                    and all(
+                        item.startswith("Corroboration requirement failed:")
+                        for item in assessment.failures
+                    )
+                )
+                can_topup = bool(attempt_settings.allowed_domains) and corroboration_only and is_last_attempt
+                if can_topup:
+                    used_domains = set(assessment.independent_trusted_domains)
+                    remaining_domains_ordered: list[str] = []
+                    for domain in (*attempt_settings.high_trust_domains, *attempt_settings.medium_trust_domains):
+                        if domain in used_domains:
+                            continue
+                        if domain not in attempt_settings.allowed_domains:
+                            continue
+                        if domain not in remaining_domains_ordered:
+                            remaining_domains_ordered.append(domain)
+                    for domain in attempt_settings.allowed_domains:
+                        if domain in used_domains:
+                            continue
+                        if domain not in remaining_domains_ordered:
+                            remaining_domains_ordered.append(domain)
+                    remaining_domains = tuple(remaining_domains_ordered)
+                    required_new_domains = max(
+                        0,
+                        assessment.required_independent_trusted_domains - len(assessment.independent_trusted_domains),
+                    )
+                    if remaining_domains and required_new_domains > 0:
+                        topup_settings = replace(
+                            attempt_settings,
+                            allowed_domains=remaining_domains,
+                            min_citations=max(1, min(required_new_domains, len(remaining_domains))),
+                            min_trusted_citations=max(1, min(required_new_domains, len(remaining_domains))),
+                            min_independent_trusted_domains=max(1, min(required_new_domains, len(remaining_domains))),
+                        )
+                        topup_query = _domain_diversity_topup_query(
+                            cleaned_query=cleaned_query,
+                            settings=topup_settings,
+                            required_new_domains=topup_settings.min_citations,
+                            strict_wording=True,
+                        )
+                        try:
+                            topup_url, topup_headers, topup_payload = self._build_provider_request(
+                                topup_query,
+                                topup_settings,
+                                risk_level=risk_level,
+                            )
+                            topup_response = self._transport(
+                                topup_url,
+                                topup_headers,
+                                topup_payload,
+                                topup_settings.timeout_seconds,
+                            )
+                            _maybe_capture_live_data_response(
+                                response_payload=topup_response,
+                                provider=topup_settings.provider,
+                                model=topup_settings.model,
+                                query=topup_query,
+                            )
+                            topup_summary, topup_citations = _extract_summary_and_citations(
+                                topup_response,
+                                settings=topup_settings,
+                            )
+                            bounded_topup = topup_citations[: topup_settings.max_results]
+                            if len(bounded_topup) < topup_settings.min_citations:
+                                raise LiveDataValidationError(
+                                    "Insufficient citation count from live intelligence provider: "
+                                    f"received {len(bounded_topup)}, required {topup_settings.min_citations}.",
+                                    attempts=(),
+                                )
+                            disallowed_topup_domains = sorted(
+                                {
+                                    citation.domain
+                                    for citation in bounded_topup
+                                    if not _domain_allowed(citation.domain, topup_settings.allowed_domains)
+                                }
+                            )
+                            if disallowed_topup_domains:
+                                raise LiveDataValidationError(
+                                    "Live intelligence returned sources outside allowed_domains: "
+                                    + ", ".join(disallowed_topup_domains),
+                                    attempts=(),
+                                )
+                            topup_annotated = _annotate_citations(
+                                citations=tuple(bounded_topup),
+                                settings=resolved_settings,
+                                now=now,
+                            )
+                            combined_by_url: dict[str, Citation] = {}
+                            for citation in (*annotated_citations, *topup_annotated):
+                                url_key = citation.url.strip()
+                                if not url_key or url_key in combined_by_url:
+                                    continue
+                                combined_by_url[url_key] = citation
+                            combined_citations = tuple(combined_by_url.values())
+                            combined_assessment = _assess_citations(
+                                citations=combined_citations,
+                                settings=resolved_settings,
+                                risk_level=risk_level,
+                            )
+                            if managed_resolution is not None:
+                                combined_assessment = replace(
+                                    combined_assessment,
+                                    managed_profile=managed_resolution.to_dict(),
+                                )
+                            if combined_assessment.passed:
+                                attempts.append(
+                                    LiveDataAttempt(
+                                        attempt_number=attempt + 1,
+                                        model=attempt_settings.model,
+                                        query_variant=query_variant,
+                                        citation_count=len(bounded_citations),
+                                        assessment_passed=False,
+                                        failure=failure,
+                                    )
+                                )
+                                attempts.append(
+                                    LiveDataAttempt(
+                                        attempt_number=attempt + 2,
+                                        model=topup_settings.model,
+                                        query_variant="domain_diversity_topup",
+                                        citation_count=len(bounded_topup),
+                                        assessment_passed=True,
+                                        failure="",
+                                    )
+                                )
+                                merged_summary = summary.strip() or topup_summary.strip()
+                                final_summary = merged_summary or "No summary text returned by provider."
+                                return LiveDataReport(
+                                    provider=settings.provider,
+                                    model=settings.model,
+                                    query=cleaned_query,
+                                    summary=final_summary,
+                                    citations=combined_citations,
+                                    fetched_at=now.isoformat(),
+                                    attempts=tuple(attempts),
+                                    assessment=combined_assessment,
+                                )
+                            topup_failure = "; ".join(combined_assessment.failures) or (
+                                "Domain diversity top-up did not satisfy trust requirements."
+                            )
+                            attempts.append(
+                                LiveDataAttempt(
+                                    attempt_number=attempt + 1,
+                                    model=attempt_settings.model,
+                                    query_variant=query_variant,
+                                    citation_count=len(bounded_citations),
+                                    assessment_passed=False,
+                                    failure=failure,
+                                )
+                            )
+                            attempts.append(
+                                LiveDataAttempt(
+                                    attempt_number=attempt + 2,
+                                    model=topup_settings.model,
+                                    query_variant="domain_diversity_topup",
+                                    citation_count=len(bounded_topup),
+                                    assessment_passed=False,
+                                    failure=topup_failure,
+                                )
+                            )
+                            last_validation_error = LiveDataValidationError(
+                                topup_failure,
+                                attempts=tuple(attempts),
+                            )
+                            continue
+                        except LiveDataError as exc:
+                            attempts.append(
+                                LiveDataAttempt(
+                                    attempt_number=attempt + 1,
+                                    model=attempt_settings.model,
+                                    query_variant=query_variant,
+                                    citation_count=len(bounded_citations),
+                                    assessment_passed=False,
+                                    failure=failure,
+                                )
+                            )
+                            attempts.append(
+                                LiveDataAttempt(
+                                    attempt_number=attempt + 2,
+                                    model=topup_settings.model if "topup_settings" in locals() else attempt_settings.model,
+                                    query_variant="domain_diversity_topup",
+                                    citation_count=0,
+                                    assessment_passed=False,
+                                    failure=str(exc),
+                                )
+                            )
+                            last_validation_error = LiveDataValidationError(
+                                str(exc),
+                                attempts=tuple(attempts),
+                            )
+                            continue
+
                 attempts.append(
                     LiveDataAttempt(
                         attempt_number=attempt + 1,
@@ -585,9 +779,35 @@ def _trusted_domain_constrained_query(
         + f"{emphasis}: Constrain sources to trusted domains only: {trusted_line}."
         + "\n"
         + f"{emphasis}: Use at least {required_domains} independent trusted domains. "
-        + "Do not repeat a domain until you meet this requirement."
+        + "Do not repeat a domain until you meet this requirement. "
+        + f"The first {required_domains} citation lines must each use a different domain."
         + "\n"
         + f"{emphasis}: Prioritize recent publications that satisfy freshness windows."
+    )
+
+
+def _domain_diversity_topup_query(
+    *,
+    cleaned_query: str,
+    settings: LiveDataSettings,
+    required_new_domains: int,
+    strict_wording: bool = False,
+) -> str:
+    emphasis = "STRICT" if strict_wording else "IMPORTANT"
+    allowed_domains = tuple(item.strip() for item in settings.allowed_domains if item.strip())
+    if not allowed_domains:
+        allowed_line = "trusted domains"
+    else:
+        allowed_line = ", ".join(allowed_domains)
+    required_new_domains = max(1, int(required_new_domains))
+    return (
+        cleaned_query
+        + "\n\n"
+        + f"{emphasis}: Return a 'Citations:' section with at least {required_new_domains} unique full https:// URLs."
+        + "\n"
+        + f"{emphasis}: Only cite sources from these domains: {allowed_line}."
+        + "\n"
+        + f"{emphasis}: The first {required_new_domains} citation lines must each use a different domain."
     )
 
 

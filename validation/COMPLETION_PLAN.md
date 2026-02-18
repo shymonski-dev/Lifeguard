@@ -4,12 +4,13 @@ This document retains the agreed completion plan and stage validation criteria.
 
 ## Completion Status
 
-Status date: `2026-02-17`
+Status date: `2026-02-18`
 
 1. Completion gate status: passed.
 2. Full completion run one: `validation/hardening_run_20260217_full_confidence_fix2_run1`
 3. Full completion run two: `validation/hardening_run_20260217_full_confidence_fix2_run2`
-4. Completion declaration file: `validation/COMPLETION_DECLARATION.md`
+4. Latest post completion revalidation run: `validation/compliance_pack_e2e_20260218_full_run2`
+5. Completion declaration file: `validation/COMPLETION_DECLARATION.md`
 
 ## Stage 0
 
@@ -106,7 +107,12 @@ Result:
 
 ## Post Completion Revalidation
 
-Record date: `2026-02-17`
+### Record date: `2026-02-17`
 
 1. Legislative review gate was added with required human decision records.
 2. Full revalidation run: `validation/legislative_review_20260217_full_escalated`
+
+### Record date: `2026-02-18`
+
+1. Compliance pack release validation was added.
+2. Full revalidation run: `validation/compliance_pack_e2e_20260218_full_run2`
