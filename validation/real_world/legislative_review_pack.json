@@ -1,0 +1,222 @@
+{
+  "version": 1,
+  "generated_at": "2026-02-19T10:07:16.515527+00:00",
+  "spec_name": "tax_regulation_review_agent",
+  "spec_sha256": "a0d84a84d048ec68cd14baf9e917f8bbb0239186b9b7fd82f8e09bc3b5d0c4f7",
+  "legal_context": {
+    "jurisdictions": [
+      "United Kingdom",
+      "European Union"
+    ],
+    "intended_use": "Administrative tax change monitoring and drafting internal review notes for human approval.",
+    "sector": "administrative and tax",
+    "decision_impact_level": "medium",
+    "compliance_target_date": "2026-08-02",
+    "data_categories": []
+  },
+  "legislative_review_settings": {
+    "provider": "openrouter",
+    "model": "openai/gpt-5.2:online",
+    "max_results": 6,
+    "min_citations": 2,
+    "timeout_seconds": 60,
+    "united_kingdom_trust_profile_id": "legislation_united_kingdom_primary",
+    "european_union_trust_profile_id": "legislation_european_union_primary",
+    "trust_profile_file": "",
+    "strict": true,
+    "require_human_decision": true
+  },
+  "jurisdictions": [
+    {
+      "jurisdiction": "United Kingdom",
+      "provider": "openrouter",
+      "model": "openai/gpt-5.2:online",
+      "query": "United Kingdom legal and regulatory obligations | intended use: Administrative tax change monitoring and drafting internal review notes for human approval. | compliance target date: 2026-08-02 | sector: administrative and tax",
+      "fetched_at": "2026-02-19T10:06:37.420263+00:00",
+      "summary": "**Researching UK legal obligations**\n\nI need to run a web search to gather up-to-date URLs regarding UK legal and regulatory obligations for administration and tax. This involves research into GDPR/UK GDPR, DPA 2018, PECR, and HMRC guidance. There are key compliance deadlines, particularly for Making Tax Digital by 2026. I should compile a summary with at least two citations from different domains, focusing on UK GDPR lawful basis, data protection assessments, and record-keeping guidelines from sites like gov.uk and ico.org.uk. gAAAAABpluCNuhFLT-QNnE23cpkhSLhl3f0DPWOCRKB5Vcl1C-fXIWytfhTL32XsWJUmAAsvezOTY-2YSRDzvjWBcMlZhAqlfzqsb47K9X3cXPqTnVSa7pQFoj2d5q4zFG3WJwaMcA4ii4DFN1tGumatVdJqpGGrjUSAWaMAJh_WWgHhD7yzpyKqb8weLpVR1k6gyi5y0hPj7kLkBfVsAoE69hCVLf5D3IGM2fMZ6rNfX8wnoZQY9umnaJqe4dkawLqMLSb6k9X6NtywwzZA0xUMVzUjHDsfgltTW2XTdnHoOotcuq8W4HwrXt3ieJ-KqXvDcTHJ8CsWnhrFmEqOmWugU2Qoh1cNvAsU2lYpwpCWKNqDlaQberiN910dGgwcDr9Mh5y6Qh9fUbtnwFlBLscopGF6G97ed4OqhUU16hZhZYFY4_EIcuZzMSt2oIx3gcDMiIoU3TNlHmkacymzAexpNKzeIL15FJqbkiAgg5WGjRQ81W-BnUZUBU6HnE54ywAoI6Zu8o9eaMzELa5cy5TR6FIDQby79EEuZAQ70mTpx55GnNAGU9oPsKp_cO5OhIhwBsXNgXflhp4Na88wKwoIdzQczKBVost0a9qNA2zRQYM-lUN2mxLbHknUY-4S2aIsUzI97Kam-wqYnV0iDL_v2dbOJA0quE5tC0tBvndU7404tBN-XmKBZD91O-WXJ9gkji73YjuxCQ5Kc8iYFH6ijP-Nl3EzVHgI5AhaSauRWnAanVRXNof9JR18pc9J8ptOhyhC96I1_ZEGzcqIiLLPGxSVlSed4AOYwKZ60DDoYnH1YHm8dquvg50exIkfMnZvxQMRsfxC39omuwb4dvOpY6p6Tyqk3n1Ugpx_okpxEVmSPV5BjErCLWtOnaFD-BQpSy0w5H1wvD22bS4IohX0qCuEfB0usTvQSQ-uCGgVt4_O4z6RgjwBpZkg4erd_kZjgpTvG5n0hAh25rJALpl_u60SydhHkkQizDAmicfYjdfIWaxBbWWyjBUNky5Uh2pJ7CnQmSPpToOBiT8gtFwVrwaTQmYFhIcA7xmkAkEXwL4nylVy-N0R0cm5_ygAniuKXFQ02QnXm0pUWvzBufYpyvtsMU0MhNSt7o4fl8EP5LEM04ihKzcH3EiJOb9xBZOwJkJZG2uDbfkDsNqV4uzeuiEMCRO1rM-K-AuBSLNq5WkSlwc1y1Kpfw1bENgE8WC2wtppsrt1M9Zf6405xYKQy6rSOzl3kqwmiM31lfXV-aFaFb3TmepDlhemEC5FsOBuUhnMLAB1QEc7I1eFo25BqhSeNOGUcdbhLvIYZXsPqrggUvtma8i4cUxHF291iwziOYP2V34TLkmHvbqPtg_F8YC6_5XtYXQQdyxP2kYa3jbGPKErog3yyiDIDnwMA-DTqnTtD02GJTOFn64GqzJ1qLsLpcyWMWC1r1yPfFg6OrKQ3PH3LEF8dGFrWqipnhVJgrbo8JX3wB3r-CzxdRTTaAt2-_XLAHFD1pMdpEbJ9ax7FyqYkusfa71uc3Q4auWsiN5oV_Kq1HxMU1-K-7-5BIaivOK7Oc-JGkKQvAMSKe34r2o3f4GHubReRGx49AEmm1PzgkolQ00IZcYYdYSuioFH-awm64cfdRSThHnVALHu7N7sGbyjEZ3nvc3HPYiyZerKSQnLffCLEIoD1hTAo_oMBlZViFE9-Sw6b_vzWvHd9_t-DvKEgvUOKcMQXkRiH_DjNOGqPcK8B3eoJxYsS6nHtBEklrPUdmCorDK6Nfnn-ynIx-QtESQ2wOCCVUk1ef-MdH_bnKi4vj7EMsYGwsmtB3zAD04XP137SRrGUq_v8iUEGkY= **Gathering tax change info**\n\nI need to summarize the obligations related to monitoring administrative tax changes and draft internal notes. I think I should consider that this may involve processing personal data from employees and clients, so data protection compliance and proper recordkeeping are crucial. There's also a significant change set for August 2, 2026 regarding MTD for Income Tax starting in April 2026 for incomes above 50k. I should search for the latest info on this. gAAAAABpluChQFMc3v4q4JjxAjppm1QzXDMppkgO5TM-Ak6kQi5yHprxZ2dNkzUWIKuCJudFkJxaeAVc0BjIXZDoskjip2Xqgssq0Vz986LzTgkiqvrieIyaXQFt-hcLZwueKe9aE2KS-P4aPRVgcQzQSi0dpyS-WGIeODthMiyoItXoa4CX7EHOy2GjFJ_AkPt94v1VYqhNFZDvGzNV2fHtJEE7cFnXV1dDdtc_PPsSbWAH9UBgeREejYsgqV1qL_PUOrKkmKGjzxPkceEsnqWjfS4q_Fwnj6MRntcD65WFakYYv5BZvwm-tYtRGIwHg2Tqo_wYnbJYK9IElxARFFnMJ0A6Og3kEPYHI9DwloZHwQTkX_I5sACEq4Gi1SUxjbu1mcxI059ReyThg0FY8KlTAX990PzQ18ehwHCxDXh1q1ElQbMW7y95IhWqcQnLDtQcj8yUydfX4n2GfhIphVd-r7BnPZPj8_c09oJAyUFMZxP-CYaVE7MRHlsHyeu7rrL9wZdMNv9ch40e6xFhq53r9i0ztqz6GksSarbpnmi7gP0u5aHB7-_8J72eu3dUPZXwNs2LdzJxMt1Dy7WefouuXdK9L9uUh4X2Lgp-pgQ2qhuqtkI22e2Lq8i_co8lLcquJEp3otiA-sBKUyTQWS1a-Fk5iYqUdNf9yXUp-FFwSC3uARSbiZRtfP41MrLPXAaH30XCBmxXTIqVv5aQOkb8qFfrfUzNfFROP_n56X4kQdEGJsEH7JkcxE0MTk12WfZ-yfUZeGMJ93hdhW6rudrFwsjv0bAiTw4xtJXd7F_zqwYiEQOEmh6vz9xpGthkerBRBgEYNyzJesijRCgByFdO-EOVT1Dfxy9Xa-l-EERASS6aCa4jLV5CtAXw1OUbH13kzr2QWQRA2iCWFBebGaZkBJzlIEp6BpKwlc5M4JUta4BeE7XhVEdYASuIRsJGHg6T8wrBtFbE1Clf2CJL3tYr2eAlByfYoIqLA5Z4AIXss8JJ5l61PxHCZoo7y8ahQuvcCOGzvNm5IugVgmz4FdulI-rkRXRf6GMN2hadsFcejpGTmHp2SKX8XIvhoINjeL3MjaJ3lRWsxKiuIxjUuaXXK8h-WEDTtZ1hCz2XM3jgWx6J7wCu15Iv8wnOKaWlcsRyzBfTv-QxtQdnx2YMLIE3ZjE36bJy-wDeAGXnUcYIn7Qlv7fG78iMnQlpZbp6x2SYIJHn9gFvTb7b6cRW7UXmvY3yiyfeOzMqr_nuEj5tybDnpIh4kHUoWEKPTRMf17ZAgaiUdKvZbBRTvUF-TaaHyeC2anmlD4VdavzuaRmOm9y8VZ2FEl2nf9bt_ZoP1H5nYnmtJ6oyRwlmcK0RYlBwtiGIYnmQViowrV-_bxuJxK__ZP9y6p29bWlIy982RaUOK94MLWBRK-VO5lZfUJiCA0C4q6fuALNl4l1lGVUTa-Pt1dIy2fo= gAAAAABpluCt4UWe3tfu-DIynSd82urNPmM6pjVHN0lTHO0Fd6xQ0bRIomW1iz3SeTKsJiJfv9SUArMtA-Alt_6OpidKi5SHfLomsJthMnM1orR3Kbzq6X0AXQqotauBoi3uqRutvaNcx_9gUAIjypP76MFaijWP4sBBOasDXHQpO9MgX9zdp6nS1sdY8EH1PH0nt19JZQhpEXE-cqTIpcNiyuFLdZkIEefyrJRLAwcLOI6N4HXT518zJWwVs9o-DwnvhSu15oBjz-NnfqjouHWTGZVomUjGuNwpzGcgBaglx9gfjE_E-BFCjxZ1q-pGJSZtDcJzVtPI2jH93L0qXnfxyOlMh34n-anOQaN01mZSfzmqpRHy2aQI-vc0B9KHSS7dNkZ95AtMIpGJV6rVHN1R5vUfxGmM-dpGTGVP5lKr-1pLeAGKOcLmWlpqib_Eh6TaSwfyE9Y1koq4xuldwPwVZ8ZBDXQAn68hIoTAnQpLTEhG8fGdYP98DgR_sx0Ku9DaYr3EnUi_aD7cjgOfJak0-ACeaEIdwnnKZ7lrlQ1rMSoLAGBZI7uVhWkAah2kM9f2Yyk0LFKcdHhjEz0a7wRDTgLmXsccEaMPTtx7wSs7O_95ZtXRqWdQFu2EIO_IAnGEletIfl-ivDaZgY0LnZYnuFeqISf6ijNQh4Zxe3Pn1fc2sz8Ws3eDpSNBMz3nQLwffU9wtGIatqNau-BsrwSdNq17PEWAIWx9BlU_HyPNDGUjgyKds-lSEHjtlvipzuPamYvFzVzgYkwP_wKtqXq0Dw-fht1g7XvVPGcItnUeVfQKbcpHReTUDCZ_9RZLgpzCwNG36fSvlPtqJhox3-r6SvkjDJDrJqBgJCiLO09urTbEe3VWvZIW7k1Yx8CwuIje_nMo4AA05tDgAnVZ4sgAh5MJy2n76z1WxijZRsROOrNq1S-ANWd7KPpbYXW_OvjSK6O_9GkB6fRNiul287UisSKfFwyiVl2F543HaqQMZu4T_cJgigA7eXKEQ1ZBj-0cseCKgDZEQu_jCuu-S3kxfqtuiT2VQhEwHm-irzvBOp3PohC0sSBRwRtpsiWwI_8XV_1k-Cp_z2tvnYIkE15W44L3PH-jvJJTaGd32MwQ8gVWa_FO3Hm397M217KqP3hdHR7j9KVpQFfGOJmSymjCxIgEVkEQ1Q_m-wPzDcfqXlmst2R271wRlgMb7wN1pTZ_JK_HQF93LGwc2_HjkzJwxUeAAXJR76ZJpzQ0OKNblKBTm6MWcLxZ5Rswsqr3f1mWNRnt0Fi32f-ik5R9yoDgvgn0KaRE4kJ7_WYjSSfHWLTns1iKAphBj0r_KGJcPRTTOtz3_JbJ7EkW-UyG7RkR9zbQsIovcrpH9HIIKX7cwrCmRuDeTQ-mlWioJC0JVr8PuRp1mGZhb0oHf5Wc7vtgTd9e_RMqa7Cd-c6vmc78W3QzGf5XJe9852O2JPgW0qyWvN-QCV0ivRX6Dqgop0QFICQRzM-99o72uJeCHrAz13JU7La-zmDlEIs_prRuDJEGsfjXsnXP5a_e1NsLaleMqXx2CwxoefcMYtnfE0Un4udkpqCDtZ4Xw1LWykiwD9P8UMAG_C6TZz9Rwwr7rtEUMuhBQAPWqsjP9Q--hz39mlZx2gyddFzgojEu9_k1dsy6y4IgImOg2vpgiisNArMV0feIDnRmKK261J1lSNtDF5rwLt-LSHtpbL1M9MndUACrQaHGh9JRakNpdr_hUWrr0kmQwc9GXSrhwnju_-h5V4WwAugVMmwDeLAa6S1DqYdpW5BpY3txEd_8gCvhUfr50DtzZJueh5R-XSRqFtM3S_H_0ERKQdlLhsmaGjlXv5ObjeHp3ewvmLoMcwEzxxY4_LclzOdNgGzHd7JkTOOTFLUjncgDPGIBVEjEsxQln4WRFkTbh_-H **Researching UK legal obligations**\n\nI need to run a web search to gather up-to-date URLs regarding UK legal and regulatory obligations for administration and tax. This involves research into GDPR/UK GDPR, DPA 2018, PECR, and HMRC guidance. There are key compliance deadlines, particularly for Making Tax Digital by 2026. I should compile a summary with at least two citations from different domains, focusing on UK GDPR lawful basis, data protection assessments, and record-keeping guidelines from sites like gov.uk and ico.org.uk.**Gathering tax change info**\n\nI need to summarize the obligations related to monitoring administrative tax changes and draft internal notes. I think I should consider that this may involve processing personal data from employees and clients, so data protection compliance and proper recordkeeping are crucial. There's also a significant change set for August 2, 2026 regarding MTD for Income Tax starting in April 2026 for incomes above 50k. I should search for the latest info on this. ## Short summary (UK \u2014 administrative & tax; target: **2 Aug 2026**)\nBy **2 August 2026**, your administrative \u201ctax change monitoring + internal note drafting (for human approval)\u201d function should be aligned to (1) **digital tax administration obligations** that affect record-keeping and reporting (notably **Making Tax Digital for Income Tax** going live **6 April 2026** for affected sole traders/landlords, plus **Making Tax Digital for VAT** digital record-keeping rules), and (2) **information governance / privacy obligations** because monitoring and internal drafting commonly involves **personal data** (client/employee identifiers, income details, correspondence). In practice this means: maintain required **digital records**, implement **controlled workflows** for producing internal review notes, and ensure **UK GDPR / Data Protection Act 2018** compliance (lawful basis, minimisation, retention, security, processor contracts), including using **DPIAs** where the processing is likely to be high risk.\n\n## Citations:\nhttps://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/  \nhttps://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/introduction  \nhttps://www.gov.uk/charge-reclaim-record-vat/keeping-vat-records  \nhttps://www.legislation.gov.uk/ukpga/2018/12/notes/division/6/index.htm",
+      "citation_count": 4,
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "model": "openai/gpt-5.2:online",
+          "query_variant": "base",
+          "citation_count": 0,
+          "assessment_passed": false,
+          "failure": "Insufficient citation count from live intelligence provider: received 0, required 2."
+        },
+        {
+          "attempt_number": 2,
+          "model": "openai/gpt-5.2:online",
+          "query_variant": "trusted_domain_constrained",
+          "citation_count": 4,
+          "assessment_passed": true,
+          "failure": ""
+        }
+      ],
+      "trust_assessment": {
+        "passed": true,
+        "trusted_citation_count": 4,
+        "required_trusted_citation_count": 2,
+        "independent_trusted_domains": [
+          "gov.uk",
+          "ico.org.uk",
+          "legislation.gov.uk"
+        ],
+        "required_independent_trusted_domains": 2,
+        "stale_citation_count": 0,
+        "unknown_freshness_count": 4,
+        "freshness_enforced": true,
+        "publication_dates_required": false,
+        "managed_profile": {
+          "profile_id": "legislation_united_kingdom_primary",
+          "profile_version": "2026-02-17",
+          "approved_by": "lifeguard-security-council",
+          "approval_id": "trust-approval-004",
+          "approved_at": "2026-02-17T00:00:00+00:00",
+          "source_path": "lifeguard/trust_profiles/managed_trust_profiles.json",
+          "risk_level": "high"
+        },
+        "failures": []
+      },
+      "citations": [
+        {
+          "url": "https://ico.org.uk/for-organisations/uk-gdpr-guidance-and-resources/accountability-and-governance/data-protection-impact-assessments-dpias/",
+          "title": "ico.org.uk",
+          "domain": "ico.org.uk",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        },
+        {
+          "url": "https://www.gov.uk/guidance/use-making-tax-digital-for-income-tax/introduction",
+          "title": "gov.uk",
+          "domain": "gov.uk",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        },
+        {
+          "url": "https://www.gov.uk/charge-reclaim-record-vat/keeping-vat-records",
+          "title": "gov.uk",
+          "domain": "gov.uk",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        },
+        {
+          "url": "https://www.legislation.gov.uk/ukpga/2018/12/notes/division/6/index.htm",
+          "title": "legislation.gov.uk",
+          "domain": "legislation.gov.uk",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        }
+      ]
+    },
+    {
+      "jurisdiction": "European Union",
+      "provider": "openrouter",
+      "model": "openai/gpt-5.2:online",
+      "query": "European Union legal and regulatory obligations | intended use: Administrative tax change monitoring and drafting internal review notes for human approval. | compliance target date: 2026-08-02 | sector: administrative and tax",
+      "fetched_at": "2026-02-19T10:07:16.505475+00:00",
+      "summary": "**Searching regulations and obligations**\n\nI need to use web.run for legal obligations and to gather URLs that are up-to-date. I should focus on allowed domains and provide a short summary plus citations with at least two unique HTTPS URLs. Also, I need to monitor administrative tax changes and draft internal notes touching on GDPR, ePrivacy, DAC, VAT, record retention, and the AI Act by August 2026. So I\u2019ll search within the allowed domains to gather all this information. Let's get started! gAAAAABpluCyu6Z1gKhjxV7u64_TUlrNd1EJ4c5CeE68Rr-6uhRRoIlQW_TxhYttf1lhgXA2ndmHsgDg5x4j1JPKrsGc84i_35A8zlxoF2C1Tw2jt9hPpJZIBhUu0htT3sZWc9XN9jTXqWTqRgQQ8ox19W03vQYJKgq-6088kdwtWuXcntZ9PvqsQ2sTS0UV7igeHLtV7EsvvShLfXxPCenadxsvzhZ0UDZ-qFEzk6bXnaYoX9d8aR7sZ0mnQ0xubRYJj8gIhjsu5g0BNvkGWlHS7aAie-K9pfActGhU1bQWm-cqyt6fGSG3sp6nCr0UtIJHsZrAo5YObmMYDdYgpP_h3OYqyG5KjkuXnTT_t40dX_ok2kxLsnp-b9M9rkB56f3qCtvRg48tPt-bGvg90H8wTkGB_Q1CZxNkANLuO_O9ANFzpchzXWUzrhe1AR59zZZeVGhWYe5cR92-rX78KSH6zWIQIpOE7U3anS_n8GGFwWCXnrLV92Rk7fyLHk8S-ERKcAq73RPqcnnZjzVOdGDw4GYqoNNM9UHEhAIhvTjmbMXku3nU_iOLvv5pCjMsjkW4C5-BEhXqd5rlMTDHDVSzRXfXk7tg9snQxikCCdf0JpnXd2aY0_3EYCY89WwAi2-Y-EcLIpLOXmwuQ4HbQtg2L4-b0nqWhZygTM_joHf_M0zoReNG8XhoAHSzJB7ELWhyXE3PQxqmNPeEhLPsw2yaYNsMfuI13u0NWl3XFKk2utGyibFqKPKjRzM3X9iDZ1kNJu8NeqQt8hja2XnqeW71IBeqrqsN3MLS-K8V_9ZKj2QJJMfxLdiwq-W4E5-mNNCYI9CJtAIVlD1w6sS3J-5kBZZcuzhRZpua0WtI1ejtcxviq5oif4hyA9Eeot1VE9vpwXk7Nu5bJiJNlXJI96Ij3aGb7weUoGXtdfPnOZjjbGTSLX3LQDKH8UuOhHIjae7I0qZk44ebo_ppsHcVFy6rLfai7qAwXUoHb8qapqv2dG8V7QVNpfb0Yfgi-sl7oyzWlD_ALzZbHioBherCL2xBBJ-i8CnDwu3lvg4hLcdkgKvEMPtPJvCHSlfteg5jlXZgRlSz_CcH40cD-MYWv2uP6amIePpN13RTJJW2Q2uV3uasd8k0eJt8dwalkN5XgFHDoTZQAf9TOeMHxh_CEmnpsdSJpsd4W9R8Oq4u_AFQkc53cGW0pz3LnAHoJVtTXMVYT5NRP_C7shDL1zld7eVjPTRYqLyjSHb2gvzdnQE86ZQhU6XRlXQJF3O0CVok31_XbZBLgWT-2DXJhPFbTr3gjIFCT-tDPqkFmKXc9PE5KkHhtJl3PJAYMB3vKr4akBT95YE5DbIO **Searching for DAC directive page**\n\nI\u2019m realizing that I need to find the DAC directive page as the search didn't return the information I was looking for. Maybe I should try another query to see if I can get better results this time. It\u2019s tricky when the initial search doesn\u2019t yield what I need, so let\u2019s see if the next attempt can lock that down! I'll focus my query to target what I specifically want. gAAAAABpluDAeheoqC2fBGvY7LtEVCTf0v0bnc8rxj7pK4dicQ7lFaByKAhmC-YydrG9iTU03hI9i_4kzPzctONVaZ4T_Jpaq3t1Gp92bzh8xkQ_gFJbZM7TK8DoeQw2B888gUXfsnNVtzHfsFMa8LzivnUqRLx6VPQCxRUpGMgL0vxyl-uTI4SrEr5YsnmrtBsjPuOu5pwzNAYlDkeh8a26ecILxj6jzvGzXLMDhwUvLzPkDOjLPLBs5XvZE9GLFqrI992_hYZxyJ-aZWw2K8Q0rfXOF6Rk8jqDEkPicYSylCdTa9x9_oTCd-l8nmEG5koDsUi9InXbfxPaiRy7Jyn0itx3UqwiCx68CYhw7zJNpmFwmcshidOt8vDIMQWce3ylrj0dvSYGrPni0JEcGcC3sM82tOePiqQKuxq59I-Oe6iEyNHxk1O9yWK-DWMmCfjRXqVI-e5jFfURK09fSGrA824_x5mtu8PIv3lZpKcaK_JPI67aWUp3SkJzrEo-WZlBMkxlRabgJKj8baKwBGwJ7msvophLjOW0pJnRj76pe-Q124hGkywaOdgtzKzDu0R_u1dbhh_FC1UcOvChcpMiWjF93XiD-noJCOgQNAIKNZGMPZshyRVtCbUlgvxYfCp70wIL8MabfZe99bLwcuVKO8AdZ0IqRz1tmj5KL03SSRwhfgOaSFZDnVYMVrr5Q8cYDhSJFLU9eGOigyjCrU_gjULOHffGFR5ywPh4TrWLZdugiL8Yh24upm_oKtsy4dIzhm96XdgfEVqgrerKB-sQC5W4EqcANckprK1ToJ_U-ED7IdisFluO56IxP1Z_YrChuu5eGrHHydjGIvDBxAbpye-TnZUPje2ZbqIGZRoVJkBBreFKn7mmitwbJ55_dy1vAPFYiJtuyXgRtGvottGew4Z6HV7eEHwAtFi1JVI6QxKNNLJVJF8= gAAAAABpluDUiA8S9iQGXkbPiplC1bMjbd1o0J_7sX95cLTXsP_hqD-YDOxk8luXKpkpuJc4bKG9tzOllsIaumHU9fgiAoUwvKKxVmSE3CopC-V5ZkoVFdgrVcNn7kUXbY9Brh0P5VD5-TZXtLQxL5hAGDwuTipMUyjg4Xsj8L8gjHQeceZ2N9pX3BN5CF5L8jdVnvmFChkPz1XgGP24n2WMPDfcimrcbJ0B5eT0DzjsIcL_dNGbz6bl-rNC1kTZF4x-pBWVlsHrnf_dkBWUouXA6KhbZ4CPudCWDuFp6OcCqXZjEKNnvPl3c13gFzBDgJ2VCR33iSauMXiALcBw5I8osETu19IYpRGzqqCwqkWbFUYsM2I6lOOtBqTaSqhD9YZx7yayEM9lzvY7LWj20I5lFkxcYhbmVGvu1o3VoLyjeqf4UlYcCT6qLT-nHkmZJ0fUB2DTNwjS2g_evPIazymwQ9gXZ5Uv5qO2IpFfH3PmBib-9e4yKMkO5XJRehitwGoetjEXAJPv_h_xo8kgCCkepoyiq5S-izHslzVbJCsJRB7Gi-K_kF2vFz3wI7wWdtKAnGU1DQIKRspyzxK_g6nwt71OvrrXhuubd3IaByvrsTTdfv6vzyBBoHS-xACllWDhcPyrQKwZ2mKiItiPedLJSmX6tATix0KYzmB2FOGzgGWglqYmII3QZ5SHzxtVT02GKPlUeZEJE_UuwqvbvN3jp_AWlfxs4_8t5AKQ1IcYfZlTC2SZdO5avYnQi-OmdPKm1EnmnMEOYZnUhKttDn7bo5A1pPzVG6HtU8hZf3p13GM5F0VZ9NkDRYNqgZQk2gJlX586MHCD32SyryL8Lrr5IWM5zRdL2FTXWc7nMYNsuwD1Yr6i3YQH1JASygFzsJf7nvo-YFHGjMG1WYw8HDGsRilnc_DWwb4YLiuUPVOYhlPUZ-Q7hnilX6OXKQEVXb7Kl3hnOGmTQm4vOdO3kq7LQzC6dC_rMNs1uWbhkJR_FkbBmVakNgH1SXQrAHgNbDYzkHBifYEZjFqmX1MK_EaGrPhKGPCWxv-nuxlWE9_Vx1j461tM47pzD37k5jBAyhSgHAOfMz2HMq-TJ8FGykFs2y-81JAqitPeshe8wVHMCuv2m1c-MO64qjEbgN6e0B9as6c0LyD-aAmOtkx12aEZVtDajj869baZuuBQ7ZmjhGJNiBzW8onNTGb3EYTuL4cM6_6DysCzsMtrEYbJ_v5LuOnFxH7RC21FwsTgdiR7aVURs5xTWiDRMTBgkZsbzUycR_lUYY05feeGrH4dk7T8ufxwFQ7ssI7WePLSaGqjB_z0CBewJIu_dnsovERO8YFoG4Lk_oLLkDfGZed6lW6KZtZbTwrBNzGJaHHFk49zTjzIABcDrKzaWb1-Qj-8Cy1kzg4Yq8sHHp5IVB1PPiNilCti20iAqSyYa90Wwa4QHJjEmftpiky5KG_6edIuBiDITs5WcClKOmmwn9JbQmxwi4Ud6vkoLN7cXC_fXOX9uv_IeB0UuLDNqnRYrjGKFaT8z0CvZ29g4a_OsPeQjsfcowoxlTfgH3QTzNK7ozbXGDrncL-6R_PuVHcyR9aQ1AQl_YidfsMqRYEXaCeh-VH6HPZDnlCAdA5r7hKFadtZakzMGhiE9srvAWl1cvAMRKnTUvU7h79rAl9PNDalju_rQJnvp9yTD8F4jWrK_LlNjzONs3BLvMKlIb5BmNGW1Qzo-fAw8Dx1A2RXGbxBkndbz3f99kfoQp5gytISP8ZoCxyaNn6JMuLUo7okVUkVTAfMa6lVSlT1WDsmyrBZ1CwsSi40ztWBP4gGtS8vbxN_JWADUFsgZ76jwQW_MwUY7A3NYDchgUNS **Searching regulations and obligations**\n\nI need to use web.run for legal obligations and to gather URLs that are up-to-date. I should focus on allowed domains and provide a short summary plus citations with at least two unique HTTPS URLs. Also, I need to monitor administrative tax changes and draft internal notes touching on GDPR, ePrivacy, DAC, VAT, record retention, and the AI Act by August 2026. So I\u2019ll search within the allowed domains to gather all this information. Let's get started!**Searching for DAC directive page**\n\nI\u2019m realizing that I need to find the DAC directive page as the search didn't return the information I was looking for. Maybe I should try another query to see if I can get better results this time. It\u2019s tricky when the initial search doesn\u2019t yield what I need, so let\u2019s see if the next attempt can lock that down! I'll focus my query to target what I specifically want. ## Short summary\n\nFor EU **administrative tax change monitoring** and drafting **internal review notes** (for human approval) in the administrative/tax sector, the core EU-level obligations and constraints to build into your process by the **compliance target date (2026-08-02)** are:\n\n- **Administrative cooperation & reporting change tracking (DAC framework):** Maintain a monitoring workflow for amendments to the Directive on Administrative Cooperation (**Directive 2011/16/EU, \u201cDAC\u201d**), including more recent amendments such as **DAC8**, which (per the EUR-Lex summary) **applies from 1 January 2026** and expands mandatory automatic exchange obligations in certain areas (e.g., crypto-asset related reporting). This is directly relevant to \u201ctax change monitoring\u201d because DAC amendments can introduce new data collection, due diligence, and reporting expectations that need internal legal review before implementation.  \n- **VAT compliance-facing documentation controls:** Where your monitoring touches VAT administration (rates, invoicing, recordkeeping requirements), align internal guidance with EU-wide invoicing/record-keeping principles and identify where Member State rules still apply (e.g., specific invoicing details). Your notes should consistently distinguish \u201cEU baseline rules\u201d vs. \u201cMember State implementation choices.\u201d  \n- **Personal data governance for monitoring + internal notes (GDPR):** If your monitoring and internal memos involve personal data (tax IDs, names, contact details, transaction identifiers, case references tied to individuals), ensure a GDPR-compliant operating model (lawful basis selection, purpose limitation, access controls, retention discipline, and vendor/processor contracting). Practical drafting implication: your internal review notes should explicitly flag when a tax-driven change requires **additional personal data collection/processing** and thus triggers privacy review (and potentially DPIA, depending on scale/risk).\n\n## Citations:\nhttps://eur-lex.europa.eu/legal-content/EN/ALL/?uri=URISERV%3Afi0006  \nhttps://taxation-customs.ec.europa.eu/taxation/vat/vat-businesses/invoicing_en  \nhttps://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-072020-concepts-controller-and-processor-gdpr_en",
+      "citation_count": 3,
+      "attempts": [
+        {
+          "attempt_number": 1,
+          "model": "openai/gpt-5.2:online",
+          "query_variant": "base",
+          "citation_count": 3,
+          "assessment_passed": true,
+          "failure": ""
+        }
+      ],
+      "trust_assessment": {
+        "passed": true,
+        "trusted_citation_count": 3,
+        "required_trusted_citation_count": 2,
+        "independent_trusted_domains": [
+          "edpb.europa.eu",
+          "eur-lex.europa.eu",
+          "taxation-customs.ec.europa.eu"
+        ],
+        "required_independent_trusted_domains": 2,
+        "stale_citation_count": 0,
+        "unknown_freshness_count": 3,
+        "freshness_enforced": true,
+        "publication_dates_required": false,
+        "managed_profile": {
+          "profile_id": "legislation_european_union_primary",
+          "profile_version": "2026-02-17",
+          "approved_by": "lifeguard-security-council",
+          "approval_id": "trust-approval-005",
+          "approved_at": "2026-02-17T00:00:00+00:00",
+          "source_path": "lifeguard/trust_profiles/managed_trust_profiles.json",
+          "risk_level": "high"
+        },
+        "failures": []
+      },
+      "citations": [
+        {
+          "url": "https://eur-lex.europa.eu/legal-content/EN/ALL/?uri=URISERV%3Afi0006",
+          "title": "eur-lex.europa.eu",
+          "domain": "eur-lex.europa.eu",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        },
+        {
+          "url": "https://taxation-customs.ec.europa.eu/taxation/vat/vat-businesses/invoicing_en",
+          "title": "taxation-customs.ec.europa.eu",
+          "domain": "taxation-customs.ec.europa.eu",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        },
+        {
+          "url": "https://www.edpb.europa.eu/our-work-tools/our-documents/guidelines/guidelines-072020-concepts-controller-and-processor-gdpr_en",
+          "title": "edpb.europa.eu",
+          "domain": "edpb.europa.eu",
+          "trust_tier": "high",
+          "source_type": "general",
+          "published_at": null,
+          "freshness_window_days": 365,
+          "age_days": null,
+          "is_fresh": null
+        }
+      ]
+    }
+  ],
+  "decision_support": {
+    "jurisdiction_count": 2,
+    "total_citations": 7,
+    "trusted_citations": 7,
+    "independent_trusted_domains": [
+      "edpb.europa.eu",
+      "eur-lex.europa.eu",
+      "gov.uk",
+      "ico.org.uk",
+      "legislation.gov.uk",
+      "taxation-customs.ec.europa.eu"
+    ]
+  },
+  "review_guidance": "This pack is generated for human review. Confirm applicability to the intended use, confirm effective dates, and record a decision with rationale."
+}
