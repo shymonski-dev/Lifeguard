@@ -6,6 +6,19 @@ Lifeguard verifies that tool-using AI agents meet security, policy, and complian
 
 **Core has no third party Python dependencies.** Some features rely on external tools such as Docker and Sigstore. Pure Python. Deny by default.
 
+Suggested use cases ..
+
+Legislative Review Agent
+Use case: checks contracts, policies, or guidance against current United Kingdom and European Union legal sources, flags conflicts, and creates an auditable decision pack for human approval.
+
+Supplier Risk Review Agent
+Use case: reviews supplier claims and documents, verifies trust and freshness of supporting evidence, applies security policy gates, and produces approve or reject recommendations with full traceability.
+
+Tax and Administrative Readiness Agent
+Use case: validates filings and supporting documents against current rules and internal controls, catches missing or weak evidence, and blocks release until required human decisions are recorded.
+
+
+
 ## Install
 
 ```bash
