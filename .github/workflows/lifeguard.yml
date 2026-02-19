@@ -54,6 +54,19 @@ jobs:
       - name: Run tests
         run: pytest -q tests
 
+  lifeguard-action-smoke:
+    needs: lifeguard-tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Run Lifeguard action smoke test
+        uses: ./
+        with:
+          spec_path: examples/spec_local.json
+          evidence_path: /tmp/lifeguard_action_evidence.jsonl
+
   dependency-review:
     if: github.event_name == 'pull_request'
     runs-on: ubuntu-latest
