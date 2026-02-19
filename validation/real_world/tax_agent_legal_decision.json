@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "decision": "accept",
+  "reviewed_by": "compliance_manager_uk_eu",
+  "review_id": "LEG-2026-02-19-001",
+  "reviewed_at": "2026-02-19T10:03:00Z",
+  "notes": "Applicable for administrative tax monitoring with mandatory human approval for write and network actions.",
+  "spec_name": "tax_regulation_review_agent",
+  "spec_sha256": "a0d84a84d048ec68cd14baf9e917f8bbb0239186b9b7fd82f8e09bc3b5d0c4f7",
+  "pack_sha256": "18d90867e3e4847e45bb92d3ffcf1fbc7d09e8f4a044baac6afba26542070c77",
+  "jurisdictions": [
+    "United Kingdom",
+    "European Union"
+  ]
+}

@@ -1,0 +1,118 @@
+name: Lifeguard Verify
+description: Verify a Lifeguard agent specification in GitHub workflows and produce evidence logs.
+author: Lifeguard Contributors
+branding:
+  icon: shield
+  color: blue
+
+inputs:
+  spec_path:
+    description: Path to the Lifeguard specification JSON file.
+    required: true
+  evidence_path:
+    description: Path for the evidence JSON lines log file.
+    required: false
+    default: .lifeguard/evidence.jsonl
+  runtime:
+    description: Verification runtime. Options are standard and langgraph.
+    required: false
+    default: standard
+  repo_path:
+    description: Optional repository path passed to Lifeguard verification.
+    required: false
+    default: ""
+  checkpoint_dir:
+    description: Optional checkpoint directory for langgraph runtime.
+    required: false
+    default: ""
+  resume_checkpoint:
+    description: Optional checkpoint file path for langgraph runtime resume.
+    required: false
+    default: ""
+  approved_by:
+    description: Optional human approver identity for network or write capable tool execution.
+    required: false
+    default: ""
+  approval_id:
+    description: Optional human approval identifier for network or write capable tool execution.
+    required: false
+    default: ""
+  approval_notes:
+    description: Optional human approval notes for verification metadata.
+    required: false
+    default: ""
+  working_directory:
+    description: Working directory where specification and evidence paths are resolved.
+    required: false
+    default: .
+  python_version:
+    description: Python version used to install and run Lifeguard.
+    required: false
+    default: "3.11"
+  install_graph_runtime:
+    description: Install optional graph runtime dependencies. Set to true when runtime is langgraph.
+    required: false
+    default: "false"
+
+outputs:
+  evidence_path:
+    description: Path to the generated evidence JSON lines log file.
+    value: ${{ steps.verify.outputs.evidence_path }}
+  verification_passed:
+    description: Whether Lifeguard verification completed successfully.
+    value: ${{ steps.verify.outputs.verification_passed }}
+
+runs:
+  using: composite
+  steps:
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ inputs.python_version }}
+
+    - name: Install Lifeguard
+      shell: bash
+      run: |
+        set -euo pipefail
+        python -m pip install --upgrade pip
+        if [ "${{ inputs.install_graph_runtime }}" = "true" ]; then
+          python -m pip install "${GITHUB_ACTION_PATH}[graph_runtime]"
+        else
+          python -m pip install "${GITHUB_ACTION_PATH}"
+        fi
+
+    - name: Run verification
+      id: verify
+      shell: bash
+      working-directory: ${{ inputs.working_directory }}
+      run: |
+        set -euo pipefail
+        mkdir -p "$(dirname "${{ inputs.evidence_path }}")"
+
+        cmd=(lifeguard verify --spec "${{ inputs.spec_path }}" --evidence "${{ inputs.evidence_path }}" --runtime "${{ inputs.runtime }}")
+
+        if [ -n "${{ inputs.repo_path }}" ]; then
+          cmd+=(--repo "${{ inputs.repo_path }}")
+        fi
+        if [ -n "${{ inputs.checkpoint_dir }}" ]; then
+          cmd+=(--checkpoint-dir "${{ inputs.checkpoint_dir }}")
+        fi
+        if [ -n "${{ inputs.resume_checkpoint }}" ]; then
+          cmd+=(--resume-checkpoint "${{ inputs.resume_checkpoint }}")
+        fi
+        if [ -n "${{ inputs.approved_by }}" ]; then
+          cmd+=(--approved-by "${{ inputs.approved_by }}")
+        fi
+        if [ -n "${{ inputs.approval_id }}" ]; then
+          cmd+=(--approval-id "${{ inputs.approval_id }}")
+        fi
+        if [ -n "${{ inputs.approval_notes }}" ]; then
+          cmd+=(--approval-notes "${{ inputs.approval_notes }}")
+        fi
+
+        "${cmd[@]}"
+
+        {
+          echo "evidence_path=${{ inputs.evidence_path }}"
+          echo "verification_passed=true"
+        } >> "${GITHUB_OUTPUT}"
