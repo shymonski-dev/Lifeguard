@@ -1,0 +1,104 @@
+{
+  "name": "tax_regulation_review_agent",
+  "description": "Track United Kingdom and European Union tax rule changes and produce review notes.",
+  "risk_level": "high",
+  "tools": [
+    {
+      "name": "read_source",
+      "command": "rg --files /workspace",
+      "can_write_files": false,
+      "can_access_network": false,
+      "timeout_seconds": 30
+    },
+    {
+      "name": "write_report",
+      "command": "python write_report.py",
+      "can_write_files": true,
+      "can_access_network": false,
+      "timeout_seconds": 60
+    }
+  ],
+  "data_scope": {
+    "read_paths": [
+      "/workspace"
+    ],
+    "write_paths": [
+      "/workspace/reports"
+    ],
+    "allowed_hosts": []
+  },
+  "runtime_environment": "container",
+  "budget_limit_usd": 100.0,
+  "max_runtime_seconds": 1800,
+  "design_method": "deterministic",
+  "profile_id": "secure_code_review",
+  "security_requirements": {
+    "goals": [
+      "Identify high-impact code vulnerabilities with deterministic checks.",
+      "Generate remediation guidance tied to file-level evidence."
+    ],
+    "threat_actors": [
+      "External attacker exploiting code defects.",
+      "Malicious insider introducing unsafe changes."
+    ],
+    "evidence_requirements": [
+      "Signed verification summary with pass and fail checks.",
+      "Traceable evidence log linking findings to source files."
+    ]
+  },
+  "legal_context": {
+    "jurisdictions": [
+      "United Kingdom",
+      "European Union"
+    ],
+    "intended_use": "Administrative tax change monitoring and drafting internal review notes for human approval.",
+    "sector": "administrative and tax",
+    "decision_impact_level": "medium",
+    "compliance_target_date": "2026-08-02",
+    "data_categories": []
+  },
+  "legislative_review": {
+    "enabled": true,
+    "provider": "openrouter",
+    "model": "openai/gpt-5.2:online",
+    "max_results": 6,
+    "min_citations": 2,
+    "timeout_seconds": 60,
+    "trust_profile_file": "",
+    "united_kingdom_trust_profile_id": "legislation_united_kingdom_primary",
+    "european_union_trust_profile_id": "legislation_european_union_primary",
+    "strict": true,
+    "require_human_decision": true,
+    "decision_file": "tax_agent_legal_decision.json"
+  },
+  "live_data": {
+    "enabled": false,
+    "provider": "openrouter",
+    "model": "openai/gpt-5.2:online",
+    "max_results": 5,
+    "min_citations": 2,
+    "timeout_seconds": 45,
+    "query": "latest secure code review agent design best practices",
+    "trust_profile_id": "secure_code_review_primary",
+    "trust_profile_file": "",
+    "allowed_domains": [],
+    "high_trust_domains": [
+      "openai.com",
+      "docs.anthropic.com",
+      "owasp.org"
+    ],
+    "medium_trust_domains": [
+      "openrouter.ai",
+      "github.com"
+    ],
+    "min_trusted_citations": 2,
+    "min_independent_trusted_domains": 2,
+    "enforce_freshness": true,
+    "require_publication_dates": false,
+    "freshness_days_news": 45,
+    "freshness_days_official_docs": 365,
+    "freshness_days_security_advisory": 180,
+    "freshness_days_general": 120,
+    "strict": true
+  }
+}

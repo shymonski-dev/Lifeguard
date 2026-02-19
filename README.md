@@ -42,6 +42,46 @@ python3 -m lifeguard profiles
 
 See [`examples/`](examples/) for a worked example with expected output.
 
+## GitHub Action
+
+Lifeguard now ships as a reusable GitHub Action from the repository root (`action.yml`), ready for free GitHub Marketplace listing.
+
+```yaml
+name: lifeguard-verify
+on:
+  workflow_dispatch:
+  pull_request:
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Run Lifeguard verification
+        uses: shymonski-dev/Lifeguard@v0.1.0
+        with:
+          spec_path: examples/spec_local.json
+          evidence_path: .lifeguard/evidence.jsonl
+```
+
+When live intelligence is enabled in your specification, add one provider key as a repository secret and pass it through environment variables:
+
+```yaml
+      - name: Run Lifeguard verification
+        uses: shymonski-dev/Lifeguard@v0.1.0
+        with:
+          spec_path: spec.json
+          evidence_path: .lifeguard/evidence.jsonl
+        env:
+          OPENROUTER_API_KEY: ${{ secrets.OPENROUTER_API_KEY }}
+```
+
+Publish steps for Marketplace:
+
+1. Push the action file on `main`.
+2. Create a semantic version tag (`v0.1.0`) and push the tag.
+3. Create a GitHub release for that tag.
+4. In GitHub Marketplace, publish the repository action listing.
+
 ## What Lifeguard does
 
 1. Loads an agent specification from JSON.
