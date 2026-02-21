@@ -248,4 +248,12 @@ Lifeguard blocks LangSmith service configuration in open source mode (`LANGSMITH
 
 ## License
 
-[MIT](LICENSE)
+This project is licensed under the [Business Source License version 1.1](LICENSE).
+
+- Free use: copy, modify, and redistribute for non-production use.
+- Commercial use: production use, commercial hosting, and inclusion in paid
+  products or services requires a separate commercial license.
+
+This version will move to the Apache License, Version 2.0 on `2029-02-21`.
+See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for commercial licensing
+requests.
