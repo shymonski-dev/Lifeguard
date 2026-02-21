@@ -246,14 +246,21 @@ Lifeguard blocks LangSmith service configuration in open source mode (`LANGSMITH
 - [Forward Development Plan](docs/FORWARD_DEVELOPMENT_PLAN.md)
 - [Adapter Migration Policy](docs/ADAPTER_MIGRATION_POLICY.md)
 
-## License
+## Licensing
 
-This project is licensed under the [Business Source License version 1.1](LICENSE).
+Lifeguard is distributed under a **Hybrid License** model to balance open innovation with sustainable development.
 
-- Free use: copy, modify, and redistribute for non-production use.
-- Commercial use: production use, commercial hosting, and inclusion in paid
-  products or services requires a separate commercial license.
+### Community Edition
+The source code is available under the [Business Source License 1.1](LICENSE).
+- **Free for non-production use:** You are encouraged to copy, modify, and redistribute Lifeguard for development, testing, and educational purposes.
+- **Automatic transition:** This version will automatically convert to the **Apache License, Version 2.0** on February 21, 2029.
 
-This version will move to the Apache License, Version 2.0 on `2029-02-21`.
-See [COMMERCIAL-LICENSE.md](COMMERCIAL-LICENSE.md) for commercial licensing
-requests.
+### Commercial Edition
+Production use, commercial hosting, or bundling Lifeguard into a paid product or service requires a [Commercial License](COMMERCIAL-LICENSE.md).
+
+Benefits of a Commercial License include:
+- Right to use Lifeguard in production environments.
+- Commercial support and priority bug fixes.
+- Custom trust profiles and legislative review modules.
+
+To request a commercial license, please contact [licensing@lifeguard.dev](mailto:licensing@lifeguard.dev) or open a [Commercial License Request](https://github.com/shymonski-dev/Lifeguard/issues/new?title=Commercial+License+Request).
